@@ -1,38 +1,39 @@
 # Dependencies
 node_modules/
-.pnp
-.pnp.js
+*/node_modules/
 
-# Environment variables
+# Environment files
 .env
 .env.local
-server/.env
-server/server.env
-server.env
+.env.*.local
+*.env
 
-# Firebase
+# Firebase credentials - NEVER push these!
 firebase-service-account.json
-server/firebase-service-account.json
-*.firebase-service-account.json
+**/firebase-service-account.json
+*.pem
+
+# Build outputs
+dist/
+build/
+.cache/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
 
 # Logs
+*.log
 npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-pnpm-debug.log*
-lerna-debug.log*
 
-# Editor directories and files
-.vscode/*
-!.vscode/extensions.json
-.idea
-.DS_Store
-*.suo
-*.ntvs*
-*.njsproj
-*.sln
-*.sw?
+# Testing
+coverage/
 
-# TypeScript
-*.tsbuildinfo
-
+# Misc
+.firebaserc

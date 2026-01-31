@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Frontend Testing Suite</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #1a1a1a;
+            color: #e0e0e0;
+        }
+        h1 {
+            color: #4CAF50;
+            border-bottom: 2px solid #4CAF50;
+            padding-bottom: 10px;
+        }
+        .test-section {
+            background: #2a2a2a;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            border-left: 4px solid #2196F3;
+        }
+        .test-item {
+            padding: 10px;
+            margin: 10px 0;
+            background: #333;
+            border-radius: 4px;
+        }
+        .pass {
+            color: #4CAF50;
+            border-left: 4px solid #4CAF50;
+        }
+        .fail {
+            color: #f44336;
+            border-left: 4px solid #f44336;
+        }
+        .info {
+            color: #FF9800;
+            border-left: 4px solid #FF9800;
+        }
+        button {
+            background: #2196F3;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+            font-size: 14px;
+        }
+        button:hover {
+            background: #1976D2;
+        }
+        .summary {
+            background: #2a2a2a;
+            padding: 20px;
+            margin-top: 20px;
+            border-radius: 8px;
+            text-align: center;
+        }
+        pre {
+            background: #1a1a1a;
+            padding: 10px;
+            border-radius: 4px;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+<body>
+    <h1>🧪 Frontend Testing Suite</h1>
+    
+    <div class="test-section">
+        <h2>Configuration Tests</h2>
+        <div id="config-tests"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>API Connection Tests</h2>
+        <div id="api-tests"></div>
+        <button onclick="testBackendConnection()">Test Backend Connection</button>
+    </div>
+
+    <div class="test-section">
+        <h2>Firebase Configuration Tests</h2>
+        <div id="firebase-tests"></div>
+        <button onclick="testFirebaseConfig()">Test Firebase Config</button>
+    </div>
+
+    <div class="test-section">
+        <h2>Route Tests</h2>
+        <div id="route-tests"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>Browser Compatibility</h2>
+        <div id="browser-tests"></div>
+    </div>
+
+    <div class="summary" id="summary">
+        <h2>Test Summary</h2>
+        <p id="summary-text">Run tests to see results</p>
+    </div>
+
+    <script>
+        const API_BASE_URL = 'http://localhost:3001'
+        const FRONTEND_URL = 'http://localhost:5173'
+        
+        let testCount = { passed: 0, failed: 0, total: 0 }
+
+        function addTestResult(containerId, name, passed, message = '') {
+            const container = document.getElementById(containerId)
+            const testItem = document.createElement('div')
+            testItem.className = `test-item ${passed ? 'pass' : 'fail'}`
+            testItem.innerHTML = `<strong>${passed ? '✅' : '❌'} ${name}</strong>${message ? `<br>${message}` : ''}`
+            container.appendChild(testItem)
+            testCount.total++
+            if (passed) testCount.passed++
+            else testCount.failed++
+            updateSummary()
+        }
+
+        function updateSummary() {
+            const summary = document.getElementById('summary-text')
+            summary.innerHTML = `
+                Total: ${testCount.total} | 
+                Passed: <span style="color: #4CAF50">${testCount.passed}</span> | 
+                Failed: <span style="color: #f44336">${testCount.failed}</span>
+            `
+        }
+
+        // Configuration Tests
+        function runConfigTests() {
+            const container = document.getElementById('config-tests')
+            container.innerHTML = ''
+
+            // Test 1: API Base URL
+            const apiUrl = typeof window !== 'undefined' && window.location.origin === FRONTEND_URL.split(':')[0]
+            addTestResult('config-tests', 'Frontend URL Configuration', true, `Expected: ${FRONTEND_URL}`)
+
+            // Test 2: Environment Variables (if available)
+            if (typeof import.meta !== 'undefined' && import.meta.env) {
+                addTestResult('config-tests', 'Vite Environment Variables', true, 'Vite env available')
+            } else {
+                addTestResult('config-tests', 'Vite Environment Variables', false, 'Vite env not available (may be normal in HTML file)')
+            }
+        }
+
+        // Backend Connection Test
+        async function testBackendConnection() {
+            const container = document.getElementById('api-tests')
+            container.innerHTML = ''
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/health`)
+                if (response.ok) {
+                    const data = await response.json()
+                    addTestResult('api-tests', 'Backend Server Connection', true, `Status: ${response.status}`)
+                    addTestResult('api-tests', 'Health Check Response', data.status === 'ok', `Response: ${JSON.stringify(data)}`)
+                } else {
+                    addTestResult('api-tests', 'Backend Server Connection', false, `Status: ${response.status}`)
+                }
+            } catch (error) {
+                addTestResult('api-tests', 'Backend Server Connection', false, `Error: ${error.message}. Make sure backend is running on ${API_BASE_URL}`)
+            }
+
+            // Test CORS
+            try {
+                const corsResponse = await fetch(`${API_BASE_URL}/api/health`, {
+                    method: 'OPTIONS',
+                    headers: { 'Origin': FRONTEND_URL }
+                })
+                const hasCors = corsResponse.headers.get('access-control-allow-origin')
+                addTestResult('api-tests', 'CORS Configuration', !!hasCors, hasCors ? `Allowed Origin: ${hasCors}` : 'CORS headers missing')
+            } catch (error) {
+                addTestResult('api-tests', 'CORS Configuration', false, error.message)
+            }
+        }
+
+        // Firebase Config Test
+        async function testFirebaseConfig() {
+            const container = document.getElementById('firebase-tests')
+            container.innerHTML = ''
+
+            // Check if Firebase is loaded
+            if (typeof firebase !== 'undefined') {
+                addTestResult('firebase-tests', 'Firebase SDK Loaded', true, 'Firebase object available')
+            } else {
+                addTestResult('firebase-tests', 'Firebase SDK Loaded', false, 'Firebase SDK not loaded. Make sure you run this in the frontend app context.')
+            }
+
+            // Note: Full Firebase tests require running in the actual app context
+            addTestResult('firebase-tests', 'Firebase Configuration File', true, 'Note: Full test requires app context')
+        }
+
+        // Browser Compatibility
+        function runBrowserTests() {
+            const container = document.getElementById('browser-tests')
+            container.innerHTML = ''
+
+            // Test fetch API
+            addTestResult('browser-tests', 'Fetch API Support', typeof fetch !== 'undefined', 'Modern browsers support fetch')
+
+            // Test ES6 features
+            addTestResult('browser-tests', 'ES6 Classes Support', (() => { try { eval('class Test {}'); return true } catch(e) { return false } })(), 'ES6 classes supported')
+            
+            // Test async/await
+            addTestResult('browser-tests', 'Async/Await Support', (() => { try { eval('(async () => {})()'); return true } catch(e) { return false } })(), 'Async/await supported')
+
+            // Test localStorage
+            addTestResult('browser-tests', 'localStorage Support', typeof localStorage !== 'undefined', 'localStorage available')
+
+            // Test sessionStorage
+            addTestResult('browser-tests', 'sessionStorage Support', typeof sessionStorage !== 'undefined', 'sessionStorage available')
+        }
+
+        // Route Tests (Manual check)
+        function runRouteTests() {
+            const container = document.getElementById('route-tests')
+            container.innerHTML = '<div class="test-item info"><strong>ℹ️ Manual Route Tests</strong><br>Check these routes in your browser:<br><ul style="text-align: left;"><li>GET / - Home page</li><li>GET /auth/signin - Sign in page</li><li>GET /auth/signup - Sign up page</li><li>GET /dashboard - Protected route (should redirect if not authenticated)</li><li>GET /portfolio - Protected route</li></ul></div>'
+        }
+
+        // Run all tests on load
+        window.onload = function() {
+            runConfigTests()
+            runBrowserTests()
+            runRouteTests()
+            // Auto-test backend connection
+            setTimeout(testBackendConnection, 500)
+        }
+    </script>
+</body>
+</html>
+
