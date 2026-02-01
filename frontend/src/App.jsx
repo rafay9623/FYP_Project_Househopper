@@ -13,6 +13,7 @@ import ROICalculator from './pages/ROICalculator'
 import BrowseUsers from './pages/BrowseUsers'
 import UserProperties from './pages/UserProperties'
 import ProtectedRoute from './components/ProtectedRoute'
+import Chatbot from '@/components/Chatbot'
 
 function App() {
   return (
@@ -80,6 +81,7 @@ function App() {
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
           <Toaster />
+          <Chatbot />
         </BrowserRouter>
       </AuthProvider>
     </ThemeProvider>
