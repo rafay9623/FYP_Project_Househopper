@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
-import { MessageSquare, X, Send, Loader2, Sparkles, Bot, Home } from 'lucide-react'
+import { MessageSquare, X, Send, Loader2, Sparkles, Bot, Home, Maximize2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { ScrollArea } from '@/components/ui/scroll-area'
@@ -18,6 +18,7 @@ export default function Chatbot() {
     const scrollRef = useRef(null)
     const inputRef = useRef(null)
     const { user: currentUser } = useAuth()
+    const [conversationId, setConversationId] = useState(() => sessionStorage.getItem('activeConversationId'))
 
     useEffect(() => {
         if (scrollRef.current) {
@@ -30,6 +31,28 @@ export default function Chatbot() {
             setTimeout(() => inputRef.current.focus(), 100)
         }
     }, [isOpen])
+
+    // Load active conversation history on mount/login
+    useEffect(() => {
+        const loadActiveConversation = async () => {
+            if (currentUser && conversationId) {
+                try {
+                    const token = await currentUser.getIdToken()
+                    const response = await fetch(`/api/conversations/${conversationId}/messages`, {
+                        headers: { 'Authorization': `Bearer ${token}` }
+                    })
+                    const data = await response.json()
+                    console.log('Chatbot history loaded:', data)
+                    if (data.success && data.messages.length > 0) {
+                        setMessages(data.messages)
+                    }
+                } catch (error) {
+                    console.error('Error loading active conversation:', error)
+                }
+            }
+        }
+        loadActiveConversation()
+    }, [currentUser, conversationId])
 
     const handleSend = async (e) => {
         e.preventDefault()
@@ -56,6 +79,7 @@ export default function Chatbot() {
                 },
                 body: JSON.stringify({
                     message: userMessage,
+                    conversationId: conversationId,
                     // Filter out complex objects from history to send clean text history
                     history: messages
                         .filter(m => !m.isError)
@@ -69,12 +93,17 @@ export default function Chatbot() {
                 throw new Error(data.error)
             }
 
+            // Save conversationId for persistence
+            if (data.conversationId && data.conversationId !== conversationId) {
+                setConversationId(data.conversationId)
+                sessionStorage.setItem('activeConversationId', data.conversationId)
+            }
+
             // Add model response to UI
-            // data should be { response: "string", properties: [] }
             setMessages(prev => [...prev, {
                 role: 'model',
                 text: data.response,
-                properties: data.properties // Attach properties to the message object
+                properties: data.properties
             }])
 
         } catch (error) {
@@ -97,7 +126,7 @@ export default function Chatbot() {
                 {props.map((prop) => (
                     <Link
                         key={prop.id}
-                        to={`/user/${prop.userId}/properties`} // Or to a specific property detail page if you have one
+                        to="/portfolio"
                         className="flex items-center gap-2 bg-background/50 hover:bg-background border border-white/10 rounded-lg p-2 text-xs transition-colors"
                     >
                         <Home className="h-3 w-3 text-secondary" />
@@ -146,6 +175,13 @@ export default function Chatbot() {
                                 </span>
                                 <p className="text-xs text-muted-foreground">Online</p>
                             </div>
+                        </div>
+                        <div className="flex items-center gap-1 ml-auto">
+                            <Link to="/chat" onClick={() => setIsOpen(false)}>
+                                <Button size="icon" variant="ghost" className="h-8 w-8 text-muted-foreground hover:text-foreground">
+                                    <Maximize2 className="h-4 w-4" />
+                                </Button>
+                            </Link>
                         </div>
                     </div>
 

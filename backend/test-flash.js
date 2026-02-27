@@ -1,0 +1,1 @@
+import { GoogleGenerativeAI } from '@google/generative-ai'; const genAI = new GoogleGenerativeAI('AIzaSyCVkS5LhTFeFE8lj_BXg2FFRPg3ATqZhew'); console.log('Checking model...'); const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' }); model.generateContent('Hi').then(() => console.log('Flash is VALID')).catch(e => console.error('Flash INVALID:', e.message));

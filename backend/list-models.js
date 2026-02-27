@@ -1,0 +1,1 @@
+import { GoogleGenerativeAI } from '@google/generative-ai'; const genAI = new GoogleGenerativeAI('AIzaSyCVkS5LhTFeFE8lj_BXg2FFRPg3ATqZhew'); console.log('Listing models...'); model = await genAI.getGenerativeModel({ model: 'unknown' }).listModels(); console.log(JSON.stringify(model));

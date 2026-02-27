@@ -12,6 +12,8 @@ import Portfolio from './pages/Portfolio'
 import ROICalculator from './pages/ROICalculator'
 import BrowseUsers from './pages/BrowseUsers'
 import UserProperties from './pages/UserProperties'
+import ChatPage from './pages/ChatPage'
+import HeatMapPage from './pages/HeatMapPage'
 import ProtectedRoute from './components/ProtectedRoute'
 import Chatbot from '@/components/Chatbot'
 
@@ -55,6 +57,14 @@ function App() {
               }
             />
             <Route
+              path="/heat-map"
+              element={
+                <ProtectedRoute>
+                  <HeatMapPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
               path="/roi-calculator/:id?"
               element={
                 <ProtectedRoute>
@@ -75,6 +85,14 @@ function App() {
               element={
                 <ProtectedRoute>
                   <UserProperties />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/chat"
+              element={
+                <ProtectedRoute>
+                  <ChatPage />
                 </ProtectedRoute>
               }
             />

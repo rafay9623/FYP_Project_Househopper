@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useAuth } from '@/contexts/AuthContext'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { LogOut, Plus, Home, Calculator, Users, Loader2 } from 'lucide-react'
+import { LogOut, Plus, Home, Calculator, Users, Loader2, Bot, Map } from 'lucide-react'
 import { propertiesApi } from '@/services/api.service'
 import { useToast } from '@/hooks/use-toast'
 import Navbar from '@/components/Navbar'
@@ -28,12 +28,12 @@ export default function Dashboard() {
       setLoading(true)
       const response = await propertiesApi.getAll()
       const properties = response.properties || response || []
-      
+
       setPropertyCount(properties.length)
-      
+
       const total = properties.reduce((sum, p) => sum + (p.current_value || p.purchase_price || 0), 0)
       setTotalValue(total)
-      
+
       const totalRent = properties.reduce((sum, p) => sum + (p.monthly_rent || 0), 0) * 12
       const totalPurchase = properties.reduce((sum, p) => sum + (p.purchase_price || 0), 0)
       const avg = totalPurchase > 0 ? (totalRent / totalPurchase) * 100 : 0
@@ -116,7 +116,7 @@ export default function Dashboard() {
           </div>
 
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-            <Card 
+            <Card
               className="cursor-pointer hover:border-primary transition"
               onClick={() => navigate('/add-property')}
             >
@@ -130,7 +130,7 @@ export default function Dashboard() {
                 </CardDescription>
               </CardHeader>
             </Card>
-            <Card 
+            <Card
               className="cursor-pointer hover:border-primary transition"
               onClick={() => navigate('/portfolio')}
             >
@@ -144,7 +144,21 @@ export default function Dashboard() {
                 </CardDescription>
               </CardHeader>
             </Card>
-            <Card 
+            <Card
+              className="cursor-pointer hover:border-blue-500 transition text-blue-500"
+              onClick={() => navigate('/heat-map')}
+            >
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Map className="h-5 w-5" />
+                  Explore Heatmap
+                </CardTitle>
+                <CardDescription className="text-foreground/70">
+                  Visualise property density on map
+                </CardDescription>
+              </CardHeader>
+            </Card>
+            <Card
               className="cursor-pointer hover:border-primary transition"
               onClick={() => navigate('/roi-calculator')}
             >
@@ -158,7 +172,7 @@ export default function Dashboard() {
                 </CardDescription>
               </CardHeader>
             </Card>
-            <Card 
+            <Card
               className="cursor-pointer hover:border-primary transition"
               onClick={() => navigate('/browse-users')}
             >
@@ -172,9 +186,23 @@ export default function Dashboard() {
                 </CardDescription>
               </CardHeader>
             </Card>
+            <Card
+              className="cursor-pointer hover:border-secondary transition bg-secondary/5 border-secondary/20"
+              onClick={() => navigate('/chat')}
+            >
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Bot className="h-5 w-5 text-secondary" />
+                  AI Assistant
+                </CardTitle>
+                <CardDescription>
+                  Chat with HouseHopper AI for insights
+                </CardDescription>
+              </CardHeader>
+            </Card>
           </div>
         </div>
       </div>
-    </div>
+    </div >
   )
 }

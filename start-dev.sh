@@ -3,37 +3,37 @@
 # Function to start a process in a new Terminal tab
 start_in_new_tab() {
     local cmd="$1"
-    local title="$2"
-    osascript -e "tell application \"Terminal\" to do script \"cd $(pwd); $cmd\""
+    # Escape backslashes and double quotes for AppleScript string
+    local escaped_cmd="${cmd//\\/\\\\}"
+    escaped_cmd="${escaped_cmd//\"/\\\"}"
+    osascript -e "tell application \"Terminal\" to do script \"$escaped_cmd\""
 }
 
+# Resolve script directory to handle running from anywhere
+DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+
 echo "Starting HouseHopper Development Servers..."
+echo "Project Root: $DIR"
 echo "---------------------"
 
 # Start Backend
 echo "Starting Backend Server..."
-echo "---------------------"
-cd backend
-if [ -f "package.json" ]; then
-    start_in_new_tab "cd backend && npm run dev" "HouseHopper Backend"
+if [ -f "$DIR/backend/package.json" ]; then
+    start_in_new_tab "cd \"$DIR/backend\" && echo 'Starting Backend...' && npm run dev"
 else
-    echo "Error: backend/package.json not found!"
+    echo "Error: backend/package.json not found in $DIR/backend"
 fi
-cd ..
 echo "---------------------"
 
 # Start Frontend
 echo "Starting Frontend Server..."
-echo "---------------------"
-cd frontend
-if [ -f "package.json" ]; then
-    start_in_new_tab "cd frontend && npm run dev" "HouseHopper Frontend"
+if [ -f "$DIR/frontend/package.json" ]; then
+    start_in_new_tab "cd \"$DIR/frontend\" && echo 'Starting Frontend...' && npm run dev"
 else
-    echo "Error: frontend/package.json not found!"
+    echo "Error: frontend/package.json not found in $DIR/frontend"
 fi
-cd ..
 echo "---------------------"
 
-echo "commands sent to new tabs!"
+echo "Sent start commands to new tabs!"
 echo "Backend: http://localhost:3001"
 echo "Frontend: http://localhost:5173"

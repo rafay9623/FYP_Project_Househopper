@@ -103,7 +103,7 @@ export async function getAllProperties(req, res) {
     })
   } catch (error) {
     console.error('Error getting properties:', error)
-    
+
     // Check if error is about missing index
     if (error.message && error.message.includes('index')) {
       return res.status(500).json({
@@ -219,12 +219,45 @@ export async function createProperty(req, res) {
       validationErrors.push('Property name must not exceed 200 characters')
     }
 
-    if (!req.body.address || typeof req.body.address !== 'string' || !req.body.address.trim()) {
-      validationErrors.push('Address is required and must be a non-empty string')
-    } else if (req.body.address.trim().length < 5) {
-      validationErrors.push('Address must be at least 5 characters long')
-    } else if (req.body.address.trim().length > 500) {
-      validationErrors.push('Address must not exceed 500 characters')
+    // Address validation - support both legacy and new structured format
+    const hasStructuredAddress = req.body.addressStreet && req.body.addressCity && req.body.addressProvince
+    const hasLegacyAddress = req.body.address && typeof req.body.address === 'string' && req.body.address.trim()
+
+    if (!hasStructuredAddress && !hasLegacyAddress) {
+      validationErrors.push('Address is required. Provide either structured address fields (street, city, province) or a full address string.')
+    }
+
+    if (hasStructuredAddress) {
+      if (typeof req.body.addressStreet !== 'string' || req.body.addressStreet.trim().length < 3) {
+        validationErrors.push('Street address must be at least 3 characters')
+      }
+      if (typeof req.body.addressCity !== 'string' || req.body.addressCity.trim().length < 2) {
+        validationErrors.push('City is required')
+      }
+      const validProvinces = ['Punjab', 'Sindh', 'KPK', 'Balochistan', 'Islamabad', 'Gilgit-Baltistan', 'Azad Kashmir']
+      if (!validProvinces.includes(req.body.addressProvince)) {
+        validationErrors.push('Province must be one of: ' + validProvinces.join(', '))
+      }
+    } else if (hasLegacyAddress) {
+      if (req.body.address.trim().length < 5) {
+        validationErrors.push('Address must be at least 5 characters long')
+      } else if (req.body.address.trim().length > 500) {
+        validationErrors.push('Address must not exceed 500 characters')
+      }
+    }
+
+    // Location coordinates validation (optional)
+    if (req.body.location) {
+      if (typeof req.body.location.latitude === 'number' && typeof req.body.location.longitude === 'number') {
+        if (req.body.location.latitude < 23 || req.body.location.latitude > 37) {
+          validationErrors.push('Latitude must be within Pakistan bounds (23-37)')
+        }
+        if (req.body.location.longitude < 60 || req.body.location.longitude > 77) {
+          validationErrors.push('Longitude must be within Pakistan bounds (60-77)')
+        }
+      } else if (req.body.location.latitude !== null || req.body.location.longitude !== null) {
+        validationErrors.push('Location coordinates must be valid numbers or null')
+      }
     }
 
     if (req.body.purchase_price === undefined || req.body.purchase_price === null) {
@@ -328,11 +361,32 @@ export async function createProperty(req, res) {
     // Sanitize and prepare property data
     const propertyData = {
       name: req.body.name.trim(),
-      address: req.body.address.trim(),
       purchase_price: parseFloat(req.body.purchase_price),
       userId, // Always use authenticated user's ID
+      country: 'Pakistan',
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString()
+    }
+
+    // Handle structured address fields
+    if (req.body.addressStreet && req.body.addressCity && req.body.addressProvince) {
+      propertyData.addressStreet = req.body.addressStreet.trim()
+      propertyData.addressCity = req.body.addressCity.trim()
+      propertyData.addressProvince = req.body.addressProvince.trim()
+      if (req.body.addressTown) propertyData.addressTown = req.body.addressTown.trim()
+      if (req.body.addressPostalCode) propertyData.addressPostalCode = req.body.addressPostalCode.trim()
+      // Build legacy address string for backward compatibility
+      propertyData.address = `${propertyData.addressStreet}, ${propertyData.addressTown ? propertyData.addressTown + ', ' : ''}${propertyData.addressCity}, ${propertyData.addressProvince}, Pakistan`
+    } else if (req.body.address) {
+      propertyData.address = req.body.address.trim()
+    }
+
+    // Handle location coordinates
+    if (req.body.location && typeof req.body.location.latitude === 'number' && typeof req.body.location.longitude === 'number') {
+      propertyData.location = {
+        latitude: req.body.location.latitude,
+        longitude: req.body.location.longitude
+      }
     }
 
     // Add optional fields only if they exist and are valid
@@ -437,9 +491,41 @@ export async function updateProperty(req, res) {
     }
 
     const updateData = {
-      ...req.body,
       updatedAt: new Date().toISOString()
     }
+
+    // Handle structured address fields if provided
+    if (req.body.addressStreet && req.body.addressCity && req.body.addressProvince) {
+      updateData.addressStreet = req.body.addressStreet.trim()
+      updateData.addressCity = req.body.addressCity.trim()
+      updateData.addressProvince = req.body.addressProvince.trim()
+      if (req.body.addressTown) updateData.addressTown = req.body.addressTown.trim()
+      if (req.body.addressPostalCode) updateData.addressPostalCode = req.body.addressPostalCode.trim()
+      updateData.address = `${updateData.addressStreet}, ${updateData.addressTown ? updateData.addressTown + ', ' : ''}${updateData.addressCity}, ${updateData.addressProvince}, Pakistan`
+      updateData.country = 'Pakistan'
+    } else if (req.body.address) {
+      updateData.address = req.body.address.trim()
+    }
+
+    // Handle location coordinates
+    if (req.body.location) {
+      if (typeof req.body.location.latitude === 'number' && typeof req.body.location.longitude === 'number') {
+        updateData.location = {
+          latitude: req.body.location.latitude,
+          longitude: req.body.location.longitude
+        }
+      } else if (req.body.location.latitude === null && req.body.location.longitude === null) {
+        updateData.location = null
+      }
+    }
+
+    // Copy other allowed fields from body
+    const allowedFields = ['name', 'purchase_price', 'current_value', 'monthly_rent', 'property_type', 'purchase_date', 'description', 'image_url']
+    allowedFields.forEach(field => {
+      if (req.body[field] !== undefined) {
+        updateData[field] = req.body[field]
+      }
+    })
 
     // Remove userId from updateData to prevent changes
     delete updateData.userId
@@ -520,7 +606,7 @@ export async function getPropertiesByUserId(req, res) {
     })
   } catch (error) {
     console.error('Error getting properties by user ID:', error)
-    
+
     // Check if error is about missing index
     if (error.message && error.message.includes('index')) {
       return res.status(500).json({
@@ -601,3 +687,48 @@ export async function deleteProperty(req, res) {
   }
 }
 
+/**
+ * Get all property locations for heat map (PUBLIC - no auth required)
+ * Returns only non-sensitive data: id, name, location, city
+ */
+export async function getAllPropertyLocations(req, res) {
+  try {
+    const db = getFirestore()
+
+    console.log('🗺️ Fetching all property locations for heat map')
+
+    const propertiesSnapshot = await db
+      .collection(PROPERTIES_COLLECTION)
+      .get()
+
+    const locations = []
+    propertiesSnapshot.forEach(doc => {
+      const data = doc.data()
+      // Only include properties with valid location coordinates
+      if (data.location && typeof data.location.latitude === 'number' && typeof data.location.longitude === 'number') {
+        locations.push({
+          id: doc.id,
+          name: data.name,
+          city: data.addressCity || null,
+          province: data.addressProvince || null,
+          propertyType: data.property_type || null,
+          location: data.location
+        })
+      }
+    })
+
+    console.log(`✅ Found ${locations.length} properties with location data`)
+
+    res.json({
+      success: true,
+      locations,
+      count: locations.length
+    })
+  } catch (error) {
+    console.error('Error getting property locations:', error)
+    res.status(500).json({
+      success: false,
+      error: error.message || 'Failed to get property locations'
+    })
+  }
+}

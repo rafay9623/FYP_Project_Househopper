@@ -4,7 +4,7 @@ import { useTheme } from 'next-themes'
 import { useAuth } from '@/contexts/AuthContext'
 import { Button } from '@/components/ui/button'
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet'
-import { Menu, ArrowLeft, Plus, Users, LogOut, User, LayoutDashboard, Building2, Calculator, Sun, Moon } from 'lucide-react'
+import { Menu, ArrowLeft, Plus, Users, LogOut, User, LayoutDashboard, Building2, Calculator, Sun, Moon, Bot, Map } from 'lucide-react'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -97,6 +97,10 @@ export default function Navbar({ variant = 'default', showBackButton = false, ba
           <Building2 className="mr-2 h-4 w-4 text-secondary" />
           <span>Portfolio</span>
         </DropdownMenuItem>
+        <DropdownMenuItem onClick={() => navigate('/chat')} className="cursor-pointer">
+          <Bot className="mr-2 h-4 w-4 text-secondary" />
+          <span>AI Assistant</span>
+        </DropdownMenuItem>
         <DropdownMenuSeparator className="bg-border/50" />
         <DropdownMenuItem onClick={handleSignOut} className="cursor-pointer text-destructive focus:text-destructive">
           <LogOut className="mr-2 h-4 w-4" />
@@ -129,7 +133,7 @@ export default function Navbar({ variant = 'default', showBackButton = false, ba
                 <span className="font-bold text-lg gradient-text-primary hidden sm:inline">HouseHoppers</span>
               </div>
             </div>
-            
+
             {/* Desktop Navigation */}
             <div className="hidden md:flex items-center gap-2">
               <Button
@@ -155,6 +159,22 @@ export default function Navbar({ variant = 'default', showBackButton = false, ba
               >
                 <Plus className="h-4 w-4 mr-2" />
                 Add Property
+              </Button>
+              <Button
+                variant="ghost"
+                onClick={() => navigate('/heat-map')}
+                className="text-sm rounded-xl hover:bg-blue-500/10 text-blue-500"
+              >
+                <Map className="h-4 w-4 mr-2" />
+                Explore Map
+              </Button>
+              <Button
+                variant="ghost"
+                onClick={() => navigate('/chat')}
+                className="text-sm rounded-xl hover:bg-secondary/10"
+              >
+                <Bot className="h-4 w-4 mr-2 text-secondary" />
+                AI Assistant
               </Button>
               <ThemeToggle />
               {isAuthenticated && <UserMenu />}
@@ -199,6 +219,22 @@ export default function Navbar({ variant = 'default', showBackButton = false, ba
                   >
                     <Plus className="h-4 w-4 mr-3 text-accent" />
                     Add Property
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    onClick={() => handleNavigate('/heat-map')}
+                    className="justify-start w-full rounded-xl"
+                  >
+                    <Map className="h-4 w-4 mr-3 text-blue-500" />
+                    Explore Map
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    onClick={() => handleNavigate('/chat')}
+                    className="justify-start w-full rounded-xl"
+                  >
+                    <Bot className="h-4 w-4 mr-3 text-secondary" />
+                    AI Assistant
                   </Button>
                   <Button
                     variant="ghost"
@@ -262,10 +298,10 @@ export default function Navbar({ variant = 'default', showBackButton = false, ba
                 <span className="font-bold text-lg gradient-text-primary hidden sm:inline">HouseHoppers</span>
               </div>
             </div>
-            
+
             {/* Desktop Navigation */}
             <div className="hidden md:flex items-center gap-3">
-              <Button 
+              <Button
                 variant="outline"
                 onClick={() => navigate('/browse-users')}
                 className="rounded-xl border-border/50 hover:border-secondary/50 hover:bg-secondary/10"
@@ -273,8 +309,8 @@ export default function Navbar({ variant = 'default', showBackButton = false, ba
                 <Users className="h-4 w-4 mr-2 text-secondary" />
                 Browse Investors
               </Button>
-              <Button 
-                onClick={() => navigate('/add-property')} 
+              <Button
+                onClick={() => navigate('/add-property')}
                 className="btn-gradient rounded-xl text-background font-semibold"
               >
                 <Plus className="h-4 w-4 mr-2" />
@@ -374,24 +410,24 @@ export default function Navbar({ variant = 'default', showBackButton = false, ba
             </div>
             <span className="font-bold text-lg gradient-text-primary hidden sm:inline">HouseHoppers</span>
           </div>
-          
+
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center gap-6">
-            <a 
-              href="#features" 
+            <a
+              href="#features"
               className="text-sm text-foreground/60 hover:text-foreground transition font-medium"
             >
               Features
             </a>
-            <a 
-              href="#benefits" 
+            <a
+              href="#benefits"
               className="text-sm text-foreground/60 hover:text-foreground transition font-medium"
             >
               Benefits
             </a>
             <ThemeToggle />
             {!isAuthenticated ? (
-              <Button 
+              <Button
                 onClick={handleGetStarted}
                 className="btn-gradient rounded-xl text-background font-semibold px-6"
               >
@@ -399,7 +435,7 @@ export default function Navbar({ variant = 'default', showBackButton = false, ba
               </Button>
             ) : (
               <div className="flex items-center gap-3">
-                <Button 
+                <Button
                   onClick={() => navigate('/dashboard')}
                   variant="outline"
                   className="rounded-xl border-border/50 hover:border-primary/50"
@@ -427,15 +463,15 @@ export default function Navbar({ variant = 'default', showBackButton = false, ba
                   </div>
                   <span className="font-bold text-lg gradient-text-primary">HouseHoppers</span>
                 </div>
-                <a 
-                  href="#features" 
+                <a
+                  href="#features"
                   onClick={() => setMobileMenuOpen(false)}
                   className="text-foreground/60 hover:text-foreground transition py-3 font-medium"
                 >
                   Features
                 </a>
-                <a 
-                  href="#benefits" 
+                <a
+                  href="#benefits"
                   onClick={() => setMobileMenuOpen(false)}
                   className="text-foreground/60 hover:text-foreground transition py-3 font-medium"
                 >
@@ -452,7 +488,7 @@ export default function Navbar({ variant = 'default', showBackButton = false, ba
                   <span className="hidden dark:inline">Dark Mode</span>
                 </Button>
                 {!isAuthenticated ? (
-                  <Button 
+                  <Button
                     onClick={handleGetStarted}
                     className="btn-gradient rounded-xl text-background font-semibold w-full mt-4"
                   >
@@ -460,7 +496,7 @@ export default function Navbar({ variant = 'default', showBackButton = false, ba
                   </Button>
                 ) : (
                   <div className="flex flex-col gap-3 pt-4 border-t border-border/50">
-                    <Button 
+                    <Button
                       onClick={() => handleNavigate('/dashboard')}
                       variant="outline"
                       className="rounded-xl w-full"

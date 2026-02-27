@@ -1,0 +1,1 @@
+import { GoogleGenerativeAI } from '@google/generative-ai'; const genAI = new GoogleGenerativeAI('AIzaSyCVkS5LhTFeFE8lj_BXg2FFRPg3ATqZhew'); const model = genAI.getGenerativeModel({ model: 'gemini-pro' }); console.log('Testing key...'); model.generateContent('Hi').then(() => console.log('Key is VALID')).catch(e => console.error('Key INVALID:', e.message));

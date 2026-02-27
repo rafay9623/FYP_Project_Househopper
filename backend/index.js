@@ -6,6 +6,7 @@ import authRoutes from './Routes/auth.js'
 import propertiesRoutes from './Routes/properties.js'
 import usersRoutes from './Routes/users.js'
 import chatRoutes from './Routes/chat.js'
+import conversationRoutes from './Routes/conversations.js'
 
 const app = express()
 const PORT = process.env.PORT || 3001
@@ -41,6 +42,7 @@ app.use('/api/auth', authRoutes)
 app.use('/api/properties', propertiesRoutes)
 app.use('/api/users', usersRoutes)
 app.use('/api/chat', chatRoutes)
+app.use('/api/conversations', conversationRoutes)
 
 // Health check
 app.get('/', (req, res) => {

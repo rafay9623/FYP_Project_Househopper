@@ -1,13 +1,15 @@
 import { model } from '../Configs/gemini_config.js'
 import { getFirestore } from '../Configs/firebase_config.js'
 
+const CONVERSATIONS_COLLECTION = 'conversations'
+
 /**
  * Handle chat message
  * POST /api/chat/message
  */
 export async function handleMessage(req, res) {
     try {
-        const { message, history } = req.body
+        const { message, history, conversationId } = req.body
         const userId = req.user.uid // From verifyToken middleware
         const db = getFirestore()
 
@@ -25,8 +27,7 @@ export async function handleMessage(req, res) {
             userProperties.push({ id: doc.id, ...doc.data() })
         })
 
-        // 2. Fetch "All Properties" (limit to recent 20 for context window efficiency, or fetch all if dataset is small)
-        // For now, let's fetch topmost 50 recent properties to give broader context
+        // 2. Fetch "All Properties"
         const allPropsSnapshot = await db.collection('properties')
             .orderBy('createdAt', 'desc')
             .limit(50)
@@ -35,8 +36,6 @@ export async function handleMessage(req, res) {
         const allProperties = []
         allPropsSnapshot.forEach(doc => {
             const data = doc.data()
-            // Avoid duplicating user's own properties in the "public" list if possible, or just include all.
-            // Let's include all but mark ownership in the prompt context.
             allProperties.push({
                 id: doc.id,
                 ...data,
@@ -73,61 +72,87 @@ export async function handleMessage(req, res) {
       }
     `
 
-        // 4. Call Gemini
-        // We use generateContent instead of startChat for simpler context injection on single turn, 
-        // or we can prepend history. For a proper "chat" with context, we need to inject system instruction.
-        // gemini-pro / 1.5 supports systemInstruction.
+        // 4. Persistence Setup
+        let activeConversationId = conversationId
+        let conversationRef
 
-        // Note: The 'model' instance from config is generic. We might need to instantiate a new one with systemInstruction if supported,
-        // or just prepend the instruction to the first message of the chat. 
-        // Since we are stateless here (history comes from frontend), let's rebuild the history with system prompt at the start.
+        if (!activeConversationId) {
+            // Create new conversation if none provided
+            const convData = {
+                userId,
+                title: message.substring(0, 40) + (message.length > 40 ? '...' : ''),
+                lastMessage: message,
+                createdAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString()
+            }
+            conversationRef = await db.collection(CONVERSATIONS_COLLECTION).add(convData)
+            activeConversationId = conversationRef.id
+        } else {
+            conversationRef = db.collection(CONVERSATIONS_COLLECTION).doc(activeConversationId)
+        }
 
+        // Save User Message
+        await conversationRef.collection('messages').add({
+            role: 'user',
+            text: message,
+            createdAt: new Date().toISOString()
+        })
+
+        // 5. Call Gemini
         let chatHistory = history ? history.map(h => ({
-            role: h.role,
+            role: h.role === 'model' ? 'model' : 'user',
             parts: [{ text: h.text }]
         })) : []
 
-        // Gemini requires the first message in history to be from 'user'.
-        // Filter out any leading 'model' messages from the history.
+        // Filter out leading model messages
         while (chatHistory.length > 0 && chatHistory[0].role === 'model') {
             chatHistory.shift()
         }
 
-        // Prepend system instruction as a "user" message (or part of the first turn) if systemModel is not available.
-        // However, Gemini 1.5/2.0 supports systemInstruction in model config.
-        // To keep it simple and compatible with the existing instance, we'll prepend context to the current prompt 
-        // or add it as the first history item if existing history is empty.
-
         const fullPrompt = `${systemInstruction}\n\nUser Message: ${message}`
 
-        // Start chat with history
         const chat = model.startChat({
             history: chatHistory,
         })
 
         const result = await chat.sendMessage(fullPrompt)
-        const response = await result.response
-        const text = response.text()
+        const geminiResponse = await result.response
+        const text = geminiResponse.text()
 
-        // 5. Clean up JSON response (sometimes models add markdown code blocks)
+        // 6. Clean up JSON response
         let jsonResponse
         try {
             const cleanedText = text.replace(/```json/g, '').replace(/```/g, '').trim()
             jsonResponse = JSON.parse(cleanedText)
         } catch (e) {
-            // Fallback if model fails to output JSON
             jsonResponse = {
                 response: text,
                 properties: []
             }
         }
 
-        res.json(jsonResponse)
+        // Save Model Response
+        await conversationRef.collection('messages').add({
+            role: 'model',
+            text: jsonResponse.response,
+            properties: jsonResponse.properties || [],
+            createdAt: new Date().toISOString()
+        })
+
+        // Update conversation summary
+        await conversationRef.update({
+            lastMessage: jsonResponse.response.substring(0, 100),
+            updatedAt: new Date().toISOString()
+        })
+
+        res.json({
+            ...jsonResponse,
+            conversationId: activeConversationId
+        })
 
     } catch (error) {
         console.error('Chat error details:', error)
 
-        // Handle specific Gemini API errors
         if (error.message && error.message.includes('429')) {
             return res.status(429).json({
                 error: 'Too many requests. Please wait a moment before trying again.'
