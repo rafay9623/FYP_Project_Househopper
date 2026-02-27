@@ -4,7 +4,7 @@ const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001'
 
 async function fetchWithAuth(url, options = {}) {
   const fullUrl = `${API_BASE_URL}${url}`
-  
+
   // Get Firebase token if available
   let token = null
   try {
@@ -14,18 +14,18 @@ async function fetchWithAuth(url, options = {}) {
   } catch (error) {
     console.warn('Could not get auth token:', error)
   }
-  
+
   const headers = {
     'Content-Type': 'application/json',
     ...options.headers,
   }
-  
+
   if (token) {
     headers['Authorization'] = `Bearer ${token}`
   }
-  
+
   console.log(`🌐 API Request: ${options.method || 'GET'} ${fullUrl}`)
-  
+
   try {
     const response = await fetch(fullUrl, {
       ...options,
@@ -38,7 +38,7 @@ async function fetchWithAuth(url, options = {}) {
     if (!response.ok) {
       let errorMessage = `HTTP error! status: ${response.status}`
       let errorDetails = null
-      
+
       try {
         const errorData = await response.json()
         errorMessage = errorData.error || errorData.message || errorMessage
@@ -55,7 +55,7 @@ async function fetchWithAuth(url, options = {}) {
           console.error('❌ Could not parse error response')
         }
       }
-      
+
       const error = new Error(errorMessage)
       error.status = response.status
       error.details = errorDetails
@@ -87,7 +87,7 @@ export const authApi = {
     if (idToken) {
       body.idToken = idToken
     }
-    
+
     const response = await fetch(`${API_BASE_URL}/api/auth/signup`, {
       method: 'POST',
       headers: {
@@ -137,10 +137,10 @@ export const authApi = {
   getProfile: async (idToken) => {
     // Use direct fetch to include token in Authorization header
     const response = await fetch(`${API_BASE_URL}/api/auth/profile`, {
-    method: 'GET',
-    headers: {
+      method: 'GET',
+      headers: {
         'Content-Type': 'application/json',
-      'Authorization': `Bearer ${idToken}`
+        'Authorization': `Bearer ${idToken}`
       },
       credentials: 'include',
     })
@@ -205,7 +205,7 @@ export const portfoliosApi = {
   delete: (id) => fetchWithAuth(`/api/portfolios/${id}`, {
     method: 'DELETE',
   }),
-  addProperty: (portfolioId, propertyId) => 
+  addProperty: (portfolioId, propertyId) =>
     fetchWithAuth(`/api/portfolios/${portfolioId}/properties`, {
       method: 'POST',
       body: JSON.stringify({ property_id: propertyId }),

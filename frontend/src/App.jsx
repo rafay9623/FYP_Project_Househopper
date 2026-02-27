@@ -16,6 +16,13 @@ import ChatPage from './pages/ChatPage'
 import HeatMapPage from './pages/HeatMapPage'
 import ProtectedRoute from './components/ProtectedRoute'
 import Chatbot from '@/components/Chatbot'
+import AdminRoute from '@/components/AdminRoute'
+import AdminLayout from '@/pages/admin/AdminLayout'
+import AdminDashboard from '@/pages/admin/AdminDashboard'
+import AdminUsers from '@/pages/admin/AdminUsers'
+import AdminProperties from '@/pages/admin/AdminProperties'
+import AdminSubscriptions from '@/pages/admin/AdminSubscriptions'
+import AdminChats from '@/pages/admin/AdminChats'
 
 function App() {
   return (
@@ -96,6 +103,24 @@ function App() {
                 </ProtectedRoute>
               }
             />
+
+            {/* Admin Routes */}
+            <Route
+              path="/admin"
+              element={
+                <AdminRoute>
+                  <AdminLayout />
+                </AdminRoute>
+              }
+            >
+              <Route index element={<Navigate to="/admin/dashboard" replace />} />
+              <Route path="dashboard" element={<AdminDashboard />} />
+              <Route path="users" element={<AdminUsers />} />
+              <Route path="properties" element={<AdminProperties />} />
+              <Route path="subscriptions" element={<AdminSubscriptions />} />
+              <Route path="chats" element={<AdminChats />} />
+            </Route>
+
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
           <Toaster />

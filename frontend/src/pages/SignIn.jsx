@@ -21,7 +21,7 @@ import {
 
 export default function SignInPage() {
   const navigate = useNavigate()
-  const { signIn, isAuthenticated } = useAuth()
+  const { signIn, isAuthenticated, user } = useAuth()
   const { toast } = useToast()
   const [formData, setFormData] = useState({
     email: '',
@@ -36,9 +36,13 @@ export default function SignInPage() {
 
   useEffect(() => {
     if (isAuthenticated) {
-      navigate('/dashboard')
+      if (user?.email === 'youngdumbrokedie@gmail.com') {
+        navigate('/admin/dashboard')
+      } else {
+        navigate('/dashboard')
+      }
     }
-  }, [isAuthenticated, navigate])
+  }, [isAuthenticated, navigate, user])
 
   if (isAuthenticated) {
     return null
@@ -56,7 +60,12 @@ export default function SignInPage() {
         title: 'Welcome back!',
         description: 'You have been successfully signed in.',
       })
-      navigate('/dashboard')
+
+      if (formData.email === 'youngdumbrokedie@gmail.com') {
+        navigate('/admin/dashboard')
+      } else {
+        navigate('/dashboard')
+      }
     } catch (err) {
       console.error('Sign in error:', err)
       let errorMessage = err.message || 'Failed to sign in. Please check your credentials.'

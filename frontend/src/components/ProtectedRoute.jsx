@@ -28,6 +28,11 @@ export default function ProtectedRoute({ children, requireEmailVerification = fa
     return <Navigate to="/auth/signin" replace />
   }
 
+  // Admin user should only access admin pages, not the regular dashboard
+  if (user?.email === 'youngdumbrokedie@gmail.com') {
+    return <Navigate to="/admin/dashboard" replace />
+  }
+
   // If email verification is required and not verified, redirect to verification page
   if (requireEmailVerification && !isEmailVerified) {
     return <Navigate to="/auth/verify-email" replace />
