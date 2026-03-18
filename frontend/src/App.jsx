@@ -14,6 +14,7 @@ import BrowseUsers from './pages/BrowseUsers'
 import UserProperties from './pages/UserProperties'
 import ChatPage from './pages/ChatPage'
 import HeatMapPage from './pages/HeatMapPage'
+import Recommendations from './pages/Recommendations'
 import ProtectedRoute from './components/ProtectedRoute'
 import Chatbot from '@/components/Chatbot'
 import AdminRoute from '@/components/AdminRoute'
@@ -100,6 +101,14 @@ function App() {
               element={
                 <ProtectedRoute>
                   <ChatPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/recommendations"
+              element={
+                <ProtectedRoute>
+                  <Recommendations />
                 </ProtectedRoute>
               }
             />

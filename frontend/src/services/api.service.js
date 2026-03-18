@@ -232,3 +232,13 @@ export const usersApi = {
     return response.properties || response
   },
 }
+
+// Recommendations API
+export const recommendationsApi = {
+  getForProperty: async (propertyId, topN = 5) => {
+    return fetchWithAuth(`/api/recommendations/${propertyId}?topN=${topN}`)
+  },
+  checkHealth: async () => {
+    return fetchWithAuth('/api/recommendations/service/health')
+  },
+}

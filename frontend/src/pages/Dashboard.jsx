@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useAuth } from '@/contexts/AuthContext'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { LogOut, Plus, Home, Calculator, Users, Loader2, Bot, Map } from 'lucide-react'
+import { LogOut, Plus, Home, Calculator, Users, Loader2, Bot, Map, Sparkles } from 'lucide-react'
 import { propertiesApi } from '@/services/api.service'
 import { useToast } from '@/hooks/use-toast'
 import Navbar from '@/components/Navbar'
@@ -183,6 +183,20 @@ export default function Dashboard() {
                 </CardTitle>
                 <CardDescription>
                   View properties from other investors
+                </CardDescription>
+              </CardHeader>
+            </Card>
+            <Card
+              className="cursor-pointer hover:border-yellow-500 transition bg-yellow-500/5 border-yellow-500/20"
+              onClick={() => navigate('/recommendations')}
+            >
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Sparkles className="h-5 w-5 text-yellow-500" />
+                  AI Recommendations
+                </CardTitle>
+                <CardDescription>
+                  Get AI-powered property suggestions
                 </CardDescription>
               </CardHeader>
             </Card>

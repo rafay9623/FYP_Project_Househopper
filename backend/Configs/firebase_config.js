@@ -17,7 +17,7 @@ export function initializeFirebase() {
 
   try {
     // Try environment variables first
-    const projectId = process.env.FIREBASE_PROJECT_ID
+    const projectId = process.env.FIREBASE_PROJECT_ID || process.env.VITE_FIREBASE_PROJECT_ID
     const clientEmail = process.env.FIREBASE_CLIENT_EMAIL
     const privateKey = process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n')
 
@@ -42,15 +42,42 @@ export function initializeFirebase() {
         })
         console.log('✅ Firebase initialized with service account file')
       } else {
-        // Initialize with default (for development)
+        // Fallback: Initialize with project ID only
+        console.log(projectId
+          ? `⚠️  Initializing Firebase with project ID '${projectId}' (no local credentials found)`
+          : '⚠️  Initializing Firebase with demo project (no local credentials found)')
+        
         admin.initializeApp({
           projectId: projectId || 'demo-project',
         })
-        console.log('⚠️  Firebase initialized with default credentials (limited functionality)')
       }
     }
 
-    firestore = admin.firestore()
+    try {
+      firestore = admin.firestore()
+      // Setup a dummy get() to prevent "Could not load default credentials" crashes on every API call
+      // if credentials aren't loaded.
+      const originalCollection = firestore.collection.bind(firestore)
+      firestore.collection = (colPath) => {
+        const col = originalCollection(colPath)
+        const originalGet = col.get.bind(col)
+        col.get = async (...args) => {
+          try {
+            return await originalGet(...args)
+          } catch (err) {
+            if (err.message && err.message.includes('Could not load the default credentials')) {
+              console.warn(`[Mock Firestore] Suppressing credential error for collection ${colPath}. Returning empty.`)
+              return { empty: true, docs: [], forEach: () => {} }
+            }
+            throw err
+          }
+        }
+        return col
+      }
+    } catch (e) {
+      console.warn('⚠️ Firestore could not be fully initialized')
+    }
+
     auth = admin.auth()
     isInitialized = true
 
@@ -61,6 +88,7 @@ export function initializeFirebase() {
     throw error
   }
 }
+
 
 export function getFirestore() {
   if (!isInitialized) {

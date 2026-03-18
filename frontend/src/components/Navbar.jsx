@@ -4,7 +4,7 @@ import { useTheme } from 'next-themes'
 import { useAuth } from '@/contexts/AuthContext'
 import { Button } from '@/components/ui/button'
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet'
-import { Menu, ArrowLeft, Plus, Users, LogOut, User, LayoutDashboard, Building2, Calculator, Sun, Moon, Bot, Map } from 'lucide-react'
+import { Menu, ArrowLeft, Plus, Users, LogOut, User, LayoutDashboard, Building2, Calculator, Sun, Moon, Bot, Map, Sparkles } from 'lucide-react'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -97,6 +97,10 @@ export default function Navbar({ variant = 'default', showBackButton = false, ba
           <Building2 className="mr-2 h-4 w-4 text-secondary" />
           <span>Portfolio</span>
         </DropdownMenuItem>
+        <DropdownMenuItem onClick={() => navigate('/recommendations')} className="cursor-pointer">
+          <Sparkles className="mr-2 h-4 w-4 text-yellow-500" />
+          <span>AI Recommendations</span>
+        </DropdownMenuItem>
         <DropdownMenuItem onClick={() => navigate('/chat')} className="cursor-pointer">
           <Bot className="mr-2 h-4 w-4 text-secondary" />
           <span>AI Assistant</span>
@@ -170,6 +174,14 @@ export default function Navbar({ variant = 'default', showBackButton = false, ba
               </Button>
               <Button
                 variant="ghost"
+                onClick={() => navigate('/recommendations')}
+                className="text-sm rounded-xl hover:bg-yellow-500/10 text-yellow-600 dark:text-yellow-400"
+              >
+                <Sparkles className="h-4 w-4 mr-2" />
+                AI Recommendations
+              </Button>
+              <Button
+                variant="ghost"
                 onClick={() => navigate('/chat')}
                 className="text-sm rounded-xl hover:bg-secondary/10"
               >
@@ -227,6 +239,14 @@ export default function Navbar({ variant = 'default', showBackButton = false, ba
                   >
                     <Map className="h-4 w-4 mr-3 text-blue-500" />
                     Explore Map
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    onClick={() => handleNavigate('/recommendations')}
+                    className="justify-start w-full rounded-xl"
+                  >
+                    <Sparkles className="h-4 w-4 mr-3 text-yellow-500" />
+                    AI Recommendations
                   </Button>
                   <Button
                     variant="ghost"
@@ -359,6 +379,14 @@ export default function Navbar({ variant = 'default', showBackButton = false, ba
                   >
                     <Plus className="h-4 w-4 mr-3 text-accent" />
                     Add Property
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    onClick={() => handleNavigate('/recommendations')}
+                    className="justify-start w-full rounded-xl"
+                  >
+                    <Sparkles className="h-4 w-4 mr-3 text-yellow-500" />
+                    AI Recommendations
                   </Button>
                   <Button
                     variant="ghost"
