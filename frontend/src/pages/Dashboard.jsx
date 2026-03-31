@@ -1,10 +1,11 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '@/contexts/AuthContext'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { LogOut, Plus, Home, Calculator, Users, Loader2, Bot, Map, Sparkles } from 'lucide-react'
 import { propertiesApi } from '@/services/api.service'
+import { Skeleton } from '@/components/ui/skeleton'
 import { useToast } from '@/hooks/use-toast'
 import Navbar from '@/components/Navbar'
 
@@ -17,13 +18,7 @@ export default function Dashboard() {
   const [avgROI, setAvgROI] = useState(0)
   const [loading, setLoading] = useState(true)
 
-  useEffect(() => {
-    if (!authLoading) {
-      loadStats()
-    }
-  }, [authLoading])
-
-  const loadStats = async () => {
+  const loadStats = useCallback(async () => {
     try {
       setLoading(true)
       const response = await propertiesApi.getAll()
@@ -55,18 +50,13 @@ export default function Dashboard() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [toast])
 
-  if (authLoading || loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-background to-muted">
-        <div className="text-center space-y-4">
-          <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto" />
-          <p className="text-foreground/70">Loading dashboard...</p>
-        </div>
-      </div>
-    )
-  }
+  useEffect(() => {
+    if (!authLoading) {
+      loadStats()
+    }
+  }, [authLoading, loadStats])
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-background to-muted">
@@ -87,7 +77,11 @@ export default function Dashboard() {
                 <CardDescription>Properties</CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="text-4xl font-bold text-primary mb-2">{propertyCount}</div>
+                {loading || authLoading ? (
+                  <Skeleton className="h-10 w-20 mb-2" />
+                ) : (
+                  <div className="text-4xl font-bold text-primary mb-2">{propertyCount}</div>
+                )}
                 <p className="text-foreground/70">Total Properties</p>
               </CardContent>
             </Card>
@@ -96,9 +90,13 @@ export default function Dashboard() {
                 <CardDescription>Total Value</CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="text-4xl font-bold text-accent mb-2">
-                  ${totalValue.toLocaleString()}
-                </div>
+                {loading || authLoading ? (
+                  <Skeleton className="h-10 w-32 mb-2" />
+                ) : (
+                  <div className="text-4xl font-bold text-accent mb-2">
+                    ${totalValue.toLocaleString()}
+                  </div>
+                )}
                 <p className="text-foreground/70">Portfolio Value</p>
               </CardContent>
             </Card>
@@ -107,9 +105,13 @@ export default function Dashboard() {
                 <CardDescription>Average ROI</CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="text-4xl font-bold text-primary mb-2">
-                  {avgROI.toFixed(2)}%
-                </div>
+                {loading || authLoading ? (
+                  <Skeleton className="h-10 w-24 mb-2" />
+                ) : (
+                  <div className="text-4xl font-bold text-primary mb-2">
+                    {avgROI.toFixed(2)}%
+                  </div>
+                )}
                 <p className="text-foreground/70">Return on Investment</p>
               </CardContent>
             </Card>

@@ -58,8 +58,8 @@ export default function RecommendedProperties({ propertyId, onPropertyClick }) {
         </h3>
         <Card className="border-dashed">
           <CardContent className="py-8 text-center text-muted-foreground">
-            <p>Recommendation service is unavailable.</p>
-            <p className="text-sm mt-1">Make sure the recommendation service is running.</p>
+            <p>Could not load recommendations.</p>
+            <p className="text-sm mt-1">{error}</p>
           </CardContent>
         </Card>
       </div>

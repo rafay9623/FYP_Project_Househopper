@@ -23,11 +23,11 @@ export async function getAllUsers(req, res) {
 
     console.log(`🔍 Fetching all users (excluding: ${currentUserId} - ${currentUserEmail})`)
 
-    // Get all users
-    const usersSnapshot = await db.collection('users').get()
-    
-    // Get all properties to count per user
-    const propertiesSnapshot = await db.collection('properties').get()
+    // Get all users and all properties in parallel
+    const [usersSnapshot, propertiesSnapshot] = await Promise.all([
+      db.collection('users').get(),
+      db.collection('properties').get()
+    ])
     
     // Count properties per user
     const propertyCountsByUser = {}

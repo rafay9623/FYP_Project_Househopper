@@ -17,21 +17,16 @@ export async function handleMessage(req, res) {
             return res.status(400).json({ error: 'Message is required' })
         }
 
-        // 1. Fetch "Your Properties"
-        const userPropsSnapshot = await db.collection('properties')
-            .where('userId', '==', userId)
-            .get()
+        // 1 & 2. Fetch "Your Properties" and "All Properties" in parallel
+        const [userPropsSnapshot, allPropsSnapshot] = await Promise.all([
+            db.collection('properties').where('userId', '==', userId).get(),
+            db.collection('properties').orderBy('createdAt', 'desc').limit(50).get()
+        ])
 
         const userProperties = []
         userPropsSnapshot.forEach(doc => {
             userProperties.push({ id: doc.id, ...doc.data() })
         })
-
-        // 2. Fetch "All Properties"
-        const allPropsSnapshot = await db.collection('properties')
-            .orderBy('createdAt', 'desc')
-            .limit(50)
-            .get()
 
         const allProperties = []
         allPropsSnapshot.forEach(doc => {

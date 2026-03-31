@@ -1,6 +1,7 @@
 import express from 'express'
 import cors from 'cors'
 import cookieParser from 'cookie-parser'
+import compression from 'compression'
 import { initializeFirebase } from './Configs/firebase_config.js'
 import authRoutes from './Routes/auth.js'
 import propertiesRoutes from './Routes/properties.js'
@@ -31,6 +32,9 @@ app.use(cors({
 app.use(express.json({ limit: '10mb' }))
 app.use(express.urlencoded({ extended: true }))
 app.use(cookieParser())
+
+// Compress all HTTP responses
+app.use(compression())
 
 // Request logging
 app.use((req, res, next) => {
