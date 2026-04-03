@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
-import { usersApi, propertiesApi } from '@/services/api.service'
-import { Loader2, Users, Building2, CreditCard, ShieldAlert } from 'lucide-react'
+import { usersApi, propertiesApi, propertyAuthApi } from '@/services/api.service'
+import { Loader2, Users, Building2, CreditCard, ShieldAlert, BadgeCheck } from 'lucide-react'
 
 export default function AdminDashboard() {
     const [stats, setStats] = useState({
@@ -8,6 +8,7 @@ export default function AdminDashboard() {
         properties: 0,
         subscriptions: 0,
         fraudAlerts: 0,
+        pendingVerifications: 0,
     })
     const [loading, setLoading] = useState(true)
 
@@ -16,21 +17,41 @@ export default function AdminDashboard() {
 
         async function fetchStats() {
             try {
-                const [users, properties] = await Promise.all([
-                    usersApi.getAll().catch(() => []),
-                    propertiesApi.getAll().catch(() => [])
-                ])
-
+                setLoading(true)
+                const data = await propertiesApi.adminGetStats()
+                
                 if (isMounted) {
-                    const safeUsers = Array.isArray(users) ? users : []
-                    const safeProps = Array.isArray(properties) ? properties : []
+                    if (data && typeof data === 'object' && !data.error) {
+                        setStats({
+                            users: data.users || 0,
+                            properties: data.properties || 0,
+                            subscriptions: data.subscriptions || 0,
+                            fraudAlerts: data.fraudAlerts || 0,
+                            pendingVerifications: data.pendingVerifications || 0,
+                        })
+                    } else {
+                        // Fallback to old expensive method if admin stats fails
+                        const [users, properties, authRequests] = await Promise.all([
+                            usersApi.adminGetAll().catch(() => []),
+                            propertiesApi.adminGetAll().catch(() => []),
+                            propertyAuthApi.getAllRequests().catch(() => ({ requests: [] }))
+                        ])
+                        
+                        const safeUsers = Array.isArray(users) ? users : []
+                        const safeProps = Array.isArray(properties) ? properties : []
+                        const safeRequests = Array.isArray(authRequests?.requests) ? authRequests.requests : (Array.isArray(authRequests) ? authRequests : [])
 
-                    setStats({
-                        users: safeUsers.length,
-                        properties: safeProps.length,
-                        subscriptions: safeUsers.filter(u => u.subscriptionPlan && u.subscriptionPlan !== 'free').length || 0,
-                        fraudAlerts: safeProps.filter(p => p.status === 'flagged' || p.isFlagged).length || 0,
-                    })
+                        setStats({
+                            users: safeUsers.length,
+                            properties: safeProps.length,
+                            subscriptions: safeUsers.filter(u => {
+                                const p = u.subscriptionPlan || 'basic'
+                                return p !== 'basic' && p !== 'free'
+                            }).length,
+                            fraudAlerts: safeProps.filter(p => p.status === 'flagged' || p.isFlagged).length || 0,
+                            pendingVerifications: safeRequests.filter(r => r.status === 'pending').length,
+                        })
+                    }
                 }
             } catch (err) {
                 console.error("Dashboard Stats Error:", err)
@@ -42,6 +63,7 @@ export default function AdminDashboard() {
         fetchStats()
         return () => { isMounted = false }
     }, [])
+
 
     if (loading) {
         return (
@@ -98,6 +120,16 @@ export default function AdminDashboard() {
                     </div>
                     <div className="h-12 w-12 rounded-full bg-destructive/10 flex items-center justify-center text-destructive">
                         <ShieldAlert className="h-6 w-6" />
+                    </div>
+                </div>
+
+                <div className="p-6 rounded-xl border bg-card text-card-foreground shadow-sm flex items-center justify-between">
+                    <div>
+                        <div className="text-sm font-medium text-muted-foreground">Pending Verifications</div>
+                        <div className="text-3xl font-bold mt-2">{stats.pendingVerifications}</div>
+                    </div>
+                    <div className="h-12 w-12 rounded-full bg-yellow-500/10 flex items-center justify-center text-yellow-500">
+                        <BadgeCheck className="h-6 w-6" />
                     </div>
                 </div>
             </div>

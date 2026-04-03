@@ -11,10 +11,13 @@ export default function AdminSubscriptions() {
         let isMounted = true
         async function fetchSubscriptions() {
             try {
-                const data = await usersApi.getAll()
+                const data = await usersApi.adminGetAll()
                 if (isMounted) {
                     const safeData = Array.isArray(data) ? data : []
-                    const subs = safeData.filter(u => u.subscriptionPlan && u.subscriptionPlan !== 'free')
+                    const subs = safeData.filter(u => {
+                        const plan = u.subscriptionPlan || 'basic'
+                        return plan !== 'basic' && plan !== 'free'
+                    })
                     setUsersWithSubs(subs)
                 }
             } catch (err) {

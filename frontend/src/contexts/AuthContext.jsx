@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect } from 'react'
+import { createContext, useContext, useState, useEffect, useMemo } from 'react'
 import {
   onAuthStateChanged,
   signInWithEmailAndPassword,
@@ -120,6 +120,12 @@ export function AuthProvider({ children }) {
     } catch (error) {
       console.error('Backend login error:', error)
     }
+
+    // Explicitly set user state so isAuthenticated becomes true BEFORE
+    // the caller navigates away. onAuthStateChanged will also fire but
+    // setting it here avoids the race condition where navigate happens
+    // before the listener runs.
+    setUser(firebaseUser)
 
     return firebaseUser
   }
@@ -262,7 +268,7 @@ export function AuthProvider({ children }) {
     return null
   }
 
-  const value = {
+  const value = useMemo(() => ({
     user,
     userProfile,
     loading,
@@ -274,7 +280,7 @@ export function AuthProvider({ children }) {
     getToken,
     resendVerificationEmail,
     sendPasswordReset
-  }
+  }), [user, userProfile, loading])
 
   return (
     <AuthContext.Provider value={value}>

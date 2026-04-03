@@ -117,12 +117,33 @@ export default function SignUpPage() {
     e.preventDefault()
     setError(null)
 
-    if (!formData.firstName.trim()) {
+    const nameRegex = /^[a-zA-Z\s\-']+$/
+    
+    const fName = formData.firstName.trim()
+    if (!fName) {
       setError('First name is required')
       return
     }
-    if (!formData.lastName.trim()) {
+    if (fName.length < 2 || fName.length > 50) {
+      setError('First name must be between 2 and 50 characters')
+      return
+    }
+    if (!nameRegex.test(fName)) {
+      setError('First name can only contain letters, spaces, hyphens, and apostrophes')
+      return
+    }
+
+    const lName = formData.lastName.trim()
+    if (!lName) {
       setError('Last name is required')
+      return
+    }
+    if (lName.length < 2 || lName.length > 50) {
+      setError('Last name must be between 2 and 50 characters')
+      return
+    }
+    if (!nameRegex.test(lName)) {
+      setError('Last name can only contain letters, spaces, hyphens, and apostrophes')
       return
     }
     // Email validation

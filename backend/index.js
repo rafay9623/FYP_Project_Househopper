@@ -2,13 +2,15 @@ import express from 'express'
 import cors from 'cors'
 import cookieParser from 'cookie-parser'
 import compression from 'compression'
-import { initializeFirebase } from './Configs/firebase_config.js'
-import authRoutes from './Routes/auth.js'
-import propertiesRoutes from './Routes/properties.js'
-import usersRoutes from './Routes/users.js'
-import chatRoutes from './Routes/chat.js'
-import conversationRoutes from './Routes/conversations.js'
-import recommendationsRoutes from './Routes/recommendations.js'
+import { initializeFirebase } from './src/config/firebase_config.js'
+import authRoutes from './src/routes/auth.js'
+import propertiesRoutes from './src/routes/properties.js'
+import usersRoutes from './src/routes/users.js'
+import chatRoutes from './src/routes/chat.js'
+import conversationRoutes from './src/routes/conversations.js'
+import recommendationsRoutes from './src/routes/recommendations.js'
+import propertyAuthRoutes from './src/routes/propertyAuth.js'
+import subscriptionRoutes from './src/routes/subscription.js'
 
 const app = express()
 const PORT = process.env.PORT || 3001
@@ -49,6 +51,8 @@ app.use('/api/users', usersRoutes)
 app.use('/api/chat', chatRoutes)
 app.use('/api/conversations', conversationRoutes)
 app.use('/api/recommendations', recommendationsRoutes)
+app.use('/api/property-auth', propertyAuthRoutes)
+app.use('/api/subscription', subscriptionRoutes)
 
 // Health check
 app.get('/', (req, res) => {

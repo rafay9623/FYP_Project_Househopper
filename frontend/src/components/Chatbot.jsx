@@ -1,12 +1,13 @@
 import { useState, useRef, useEffect } from 'react'
-import { MessageSquare, X, Send, Loader2, Sparkles, Bot, Home, Maximize2 } from 'lucide-react'
+import { MessageSquare, X, Send, Loader2, Sparkles, Bot, Home, Maximize2, Lock } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { cn } from '@/utils/helpers'
 import AnimatedSection from '@/components/AnimatedSection'
 import { useAuth } from '@/contexts/AuthContext'
-import { Link } from 'react-router-dom'
+import { useSubscription } from '@/contexts/SubscriptionContext'
+import { Link, useNavigate } from 'react-router-dom'
 
 export default function Chatbot() {
     const [isOpen, setIsOpen] = useState(false)
@@ -15,9 +16,12 @@ export default function Chatbot() {
     ])
     const [input, setInput] = useState('')
     const [loading, setLoading] = useState(false)
+    const [rateLimited, setRateLimited] = useState(false)
     const scrollRef = useRef(null)
     const inputRef = useRef(null)
     const { user: currentUser } = useAuth()
+    const { plan, chatUsage, refreshPlan } = useSubscription()
+    const navigate = useNavigate()
     const [conversationId, setConversationId] = useState(() => sessionStorage.getItem('activeConversationId'))
 
     useEffect(() => {
@@ -108,11 +112,24 @@ export default function Chatbot() {
 
         } catch (error) {
             console.error('Chat error:', error)
-            setMessages(prev => [...prev, {
-                role: 'model',
-                text: error.message || 'Sorry, I encountered an error. Please try again later.',
-                isError: true
-            }])
+
+            // Handle rate limiting
+            if (error.status === 429 || (error.message && error.message.includes('limit'))) {
+                setRateLimited(true)
+                refreshPlan()
+                setMessages(prev => [...prev, {
+                    role: 'model',
+                    text: '⚠️ You\'ve reached your daily message limit (10 messages per 24 hours on the Basic plan). Upgrade your plan for unlimited messaging!',
+                    isError: true,
+                    isRateLimit: true,
+                }])
+            } else {
+                setMessages(prev => [...prev, {
+                    role: 'model',
+                    text: error.message || 'Sorry, I encountered an error. Please try again later.',
+                    isError: true
+                }])
+            }
         } finally {
             setLoading(false)
         }

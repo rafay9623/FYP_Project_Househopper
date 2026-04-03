@@ -44,15 +44,6 @@ export default function Recommendations() {
     }
   }
 
-  const handlePropertyClick = (property) => {
-    // When user clicks a recommended property, show recommendations for that one
-    setSelectedPropertyId(property.id)
-    toast({
-      title: 'Switched Property',
-      description: `Now showing recommendations based on "${property.name}"`,
-    })
-  }
-
   if (authLoading || loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-background to-muted">
@@ -84,29 +75,7 @@ export default function Recommendations() {
             </p>
           </div>
 
-          {/* How it works */}
-          <Card className="border-primary/20 bg-primary/5">
-            <CardContent className="py-4">
-              <div className="flex flex-wrap items-center justify-center gap-3 text-sm text-foreground/80">
-                <span className="font-medium">How it works:</span>
-                <span className="flex items-center gap-1">
-                  📝 Select your property
-                </span>
-                <ArrowRight className="h-4 w-4 text-primary hidden sm:block" />
-                <span className="flex items-center gap-1">
-                  🧠 AI encodes features
-                </span>
-                <ArrowRight className="h-4 w-4 text-primary hidden sm:block" />
-                <span className="flex items-center gap-1">
-                  📊 Cosine similarity
-                </span>
-                <ArrowRight className="h-4 w-4 text-primary hidden sm:block" />
-                <span className="flex items-center gap-1">
-                  ✨ Top matches shown
-                </span>
-              </div>
-            </CardContent>
-          </Card>
+
 
           {/* Property Selector */}
           {properties.length > 0 ? (
@@ -155,7 +124,6 @@ export default function Recommendations() {
           {selectedPropertyId && (
             <RecommendedProperties
               propertyId={selectedPropertyId}
-              onPropertyClick={handlePropertyClick}
             />
           )}
         </div>

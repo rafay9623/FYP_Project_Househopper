@@ -1,17 +1,27 @@
 import { useState, useEffect } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Loader2, Sparkles, MapPin, Home, TrendingUp } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from '@/components/ui/dialog'
+import { Separator } from '@/components/ui/separator'
+import { Loader2, Sparkles, MapPin, Home, TrendingUp, BedDouble, Bath, Ruler, X, Target } from 'lucide-react'
 import { recommendationsApi } from '@/services/api.service'
 
 /**
  * RecommendedProperties — displays AI-driven similar property recommendations.
  * Pass a `propertyId` to find properties similar to that one.
  */
-export default function RecommendedProperties({ propertyId, onPropertyClick }) {
+export default function RecommendedProperties({ propertyId }) {
   const [recommendations, setRecommendations] = useState([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
+  const [selectedProperty, setSelectedProperty] = useState(null)
 
   useEffect(() => {
     if (propertyId) {
@@ -98,7 +108,7 @@ export default function RecommendedProperties({ propertyId, onPropertyClick }) {
           <Card
             key={property.id}
             className="cursor-pointer hover:border-primary/50 hover:shadow-lg transition-all duration-200 group relative overflow-hidden"
-            onClick={() => onPropertyClick?.(property)}
+            onClick={() => setSelectedProperty(property)}
           >
             {/* Match percentage badge */}
             <div className="absolute top-3 right-3 z-10">
@@ -160,6 +170,125 @@ export default function RecommendedProperties({ propertyId, onPropertyClick }) {
           </Card>
         ))}
       </div>
+
+      {/* Property Detail Dialog */}
+      <Dialog open={!!selectedProperty} onOpenChange={(open) => !open && setSelectedProperty(null)}>
+        <DialogContent className="sm:max-w-lg max-h-[85vh] overflow-y-auto">
+          {selectedProperty && (
+            <>
+              <DialogHeader>
+                <DialogTitle className="text-xl flex items-center gap-2">
+                  {selectedProperty.name || 'Property Details'}
+                </DialogTitle>
+                <DialogDescription className="flex items-center gap-2 pt-1">
+                  <Badge
+                    className={`text-xs font-bold ${
+                      selectedProperty.matchPercentage >= 80
+                        ? 'bg-green-500/90 text-white'
+                        : selectedProperty.matchPercentage >= 60
+                        ? 'bg-blue-500/90 text-white'
+                        : 'bg-orange-500/90 text-white'
+                    }`}
+                  >
+                    <Target className="h-3 w-3 mr-1" />
+                    {selectedProperty.matchPercentage}% Match
+                  </Badge>
+                  {selectedProperty.property_type && (
+                    <Badge variant="outline">{selectedProperty.property_type}</Badge>
+                  )}
+                  {selectedProperty.purpose && (
+                    <Badge variant="outline">{selectedProperty.purpose}</Badge>
+                  )}
+                </DialogDescription>
+              </DialogHeader>
+
+              <Separator />
+
+              <div className="space-y-4">
+                {/* Location */}
+                {(selectedProperty.addressCity || selectedProperty.address || selectedProperty.location) && (
+                  <div className="flex items-start gap-3">
+                    <MapPin className="h-5 w-5 text-muted-foreground mt-0.5 shrink-0" />
+                    <div>
+                      <p className="text-sm font-medium">Location</p>
+                      <p className="text-sm text-muted-foreground">
+                        {selectedProperty.location || 
+                          [selectedProperty.address, selectedProperty.addressCity, selectedProperty.addressProvince]
+                            .filter(Boolean)
+                            .join(', ')
+                        }
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {/* Price */}
+                {selectedProperty.purchase_price && (
+                  <div className="flex items-start gap-3">
+                    <TrendingUp className="h-5 w-5 text-primary mt-0.5 shrink-0" />
+                    <div>
+                      <p className="text-sm font-medium">Price</p>
+                      <p className="text-lg font-bold text-primary">
+                        PKR {Number(selectedProperty.purchase_price).toLocaleString()}
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {/* Rent */}
+                {selectedProperty.monthly_rent && (
+                  <div className="flex items-start gap-3">
+                    <TrendingUp className="h-5 w-5 text-muted-foreground mt-0.5 shrink-0" />
+                    <div>
+                      <p className="text-sm font-medium">Monthly Rent</p>
+                      <p className="text-sm text-muted-foreground">
+                        PKR {Number(selectedProperty.monthly_rent).toLocaleString()}/mo
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {/* Property specs row */}
+                <div className="grid grid-cols-3 gap-3">
+                  {selectedProperty.bedrooms != null && (
+                    <div className="flex flex-col items-center gap-1 rounded-lg border p-3">
+                      <BedDouble className="h-5 w-5 text-muted-foreground" />
+                      <span className="text-sm font-semibold">{selectedProperty.bedrooms}</span>
+                      <span className="text-xs text-muted-foreground">Bedrooms</span>
+                    </div>
+                  )}
+                  {selectedProperty.baths != null && (
+                    <div className="flex flex-col items-center gap-1 rounded-lg border p-3">
+                      <Bath className="h-5 w-5 text-muted-foreground" />
+                      <span className="text-sm font-semibold">{selectedProperty.baths}</span>
+                      <span className="text-xs text-muted-foreground">Bathrooms</span>
+                    </div>
+                  )}
+                  {selectedProperty.area != null && (
+                    <div className="flex flex-col items-center gap-1 rounded-lg border p-3">
+                      <Ruler className="h-5 w-5 text-muted-foreground" />
+                      <span className="text-sm font-semibold">
+                        {selectedProperty.area} {selectedProperty.area_type || ''}
+                      </span>
+                      <span className="text-xs text-muted-foreground">Area</span>
+                    </div>
+                  )}
+                </div>
+
+                {/* Description */}
+                {selectedProperty.description && (
+                  <div>
+                    <p className="text-sm font-medium mb-1">Description</p>
+                    <p className="text-sm text-muted-foreground leading-relaxed">
+                      {selectedProperty.description}
+                    </p>
+                  </div>
+                )}
+              </div>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

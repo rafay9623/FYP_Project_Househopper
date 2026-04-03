@@ -91,7 +91,7 @@ export default function BrowseUsers() {
           <div className="text-center space-y-4">
             <h1 className="text-4xl font-bold text-foreground">Browse Investors</h1>
             <p className="text-lg text-foreground/70">
-              Discover properties from other real estate investors
+              Discover properties from all real estate investors
             </p>
           </div>
 
@@ -113,7 +113,7 @@ export default function BrowseUsers() {
               <CardContent className="flex flex-col items-center justify-center py-16">
                 <Users className="h-16 w-16 text-muted-foreground mb-4" />
                 <h3 className="text-xl font-semibold mb-2">
-                  {searchTerm ? 'No users found' : 'No other investors yet'}
+                  {searchTerm ? 'No users found' : 'No investors yet'}
                 </h3>
                 <p className="text-muted-foreground text-center">
                   {searchTerm 

@@ -5,10 +5,12 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Alert, AlertDescription } from '@/components/ui/alert'
-import { Calculator, TrendingUp, AlertCircle } from 'lucide-react'
+import { Calculator, TrendingUp, AlertCircle, Save } from 'lucide-react'
 import { propertiesApi } from '@/services/api.service'
 import { useToast } from '@/hooks/use-toast'
 import Navbar from '@/components/Navbar'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Button } from '@/components/ui/button'
 
 export default function ROICalculator() {
   const navigate = useNavigate()
@@ -18,6 +20,8 @@ export default function ROICalculator() {
   const [property, setProperty] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+  const [allProperties, setAllProperties] = useState([])
+  const [savingProperty, setSavingProperty] = useState(false)
   const [calculations, setCalculations] = useState({
     annualRent: 0,
     annualROI: 0,
@@ -27,15 +31,15 @@ export default function ROICalculator() {
     totalExpenses: 0,
   })
   const [inputs, setInputs] = useState({
-    monthlyRent: 0,
-    purchasePrice: 0,
-    currentValue: 0,
-    downPayment: 0,
-    monthlyExpenses: 0,
-    propertyTax: 0,
-    insurance: 0,
-    maintenance: 0,
-    managementFee: 0,
+    monthlyRent: '',
+    purchasePrice: '',
+    currentValue: '',
+    downPayment: '',
+    monthlyExpenses: '',
+    propertyTax: '',
+    insurance: '',
+    maintenance: '',
+    managementFee: '',
   })
 
   useEffect(() => {
@@ -43,9 +47,51 @@ export default function ROICalculator() {
       loadProperty()
     } else if (!authLoading && !id) {
       setLoading(false)
+      setProperty(null) // Reset property if navigating back to raw calculator
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [authLoading, id])
+
+  useEffect(() => {
+    const fetchUserProperties = async () => {
+      try {
+        const data = await propertiesApi.getAll()
+        // Format properties data if it comes wrapped
+        setAllProperties(data || [])
+      } catch (error) {
+        console.error('Failed to fetch user properties for Dropdown:', error)
+      }
+    }
+    
+    if (!authLoading) {
+      fetchUserProperties()
+    }
+  }, [authLoading])
+
+  const handleSaveToProperty = async () => {
+    if (!property || !property.id) return
+    setSavingProperty(true)
+    try {
+      await propertiesApi.update(property.id, {
+        monthly_rent: Number(inputs.monthlyRent) || 0,
+        purchase_price: Number(inputs.purchasePrice) || 0,
+        current_value: Number(inputs.currentValue) || 0,
+      })
+      toast({
+        title: 'Success',
+        description: 'Property metrics updated successfully.',
+      })
+    } catch (error) {
+      console.error('Error saving property updates:', error)
+      toast({
+        title: 'Error',
+        description: 'Failed to save property updates.',
+        variant: 'destructive',
+      })
+    } finally {
+      setSavingProperty(false)
+    }
+  }
 
   // Helper function to validate numbers
   const validateNumber = (value, min, max, defaultValue) => {
@@ -206,56 +252,32 @@ export default function ROICalculator() {
   }, [inputs])
 
   const handleInputChange = (field, value) => {
-    // Validate input based on field type
-    let validatedValue = parseFloat(value) || 0
+    // Safely use functional state updates to prevent stale data during rapid typing
+    setInputs(prev => {
+      const numValue = parseFloat(value)
+      let finalValue = value
 
-    // Apply field-specific validation
-    switch (field) {
-      case 'monthlyRent':
-        validatedValue = validateNumber(value, 0, 1000000, 0)
-        break
-      case 'purchasePrice':
-        validatedValue = validateNumber(value, 0, 1000000000, 0)
-        // If purchase price changes, validate down payment doesn't exceed it
-        if (validatedValue < inputs.downPayment) {
-          setInputs({ 
-            ...inputs, 
-            [field]: validatedValue,
-            downPayment: validatedValue // Cap down payment at purchase price
-          })
-          return
+      if (!isNaN(numValue)) {
+        if (field === 'purchasePrice') {
+          const dPayment = parseFloat(prev.downPayment) || 0
+          if (numValue < dPayment) {
+            return {
+              ...prev,
+              [field]: value,
+              downPayment: value
+            }
+          }
         }
-        break
-      case 'currentValue':
-        validatedValue = validateNumber(value, 0, 1000000000, 0)
-        break
-      case 'downPayment':
-        validatedValue = validateNumber(value, 0, inputs.purchasePrice || 1000000000, 0)
-        // Ensure down payment doesn't exceed purchase price
-        if (validatedValue > inputs.purchasePrice) {
-          validatedValue = inputs.purchasePrice
+        if (field === 'downPayment') {
+          const pPrice = parseFloat(prev.purchasePrice) || 0
+          if (numValue > pPrice) {
+            finalValue = pPrice.toString()
+          }
         }
-        break
-      case 'monthlyExpenses':
-        validatedValue = validateNumber(value, 0, 1000000, 0)
-        break
-      case 'propertyTax':
-        validatedValue = validateNumber(value, 0, 1000000, 0)
-        break
-      case 'insurance':
-        validatedValue = validateNumber(value, 0, 1000000, 0)
-        break
-      case 'maintenance':
-        validatedValue = validateNumber(value, 0, 1000000, 0)
-        break
-      case 'managementFee':
-        validatedValue = validateNumber(value, 0, 100, 0) // Percentage 0-100
-        break
-      default:
-        validatedValue = isNaN(validatedValue) || !isFinite(validatedValue) ? 0 : validatedValue
-    }
+      }
 
-    setInputs({ ...inputs, [field]: validatedValue })
+      return { ...prev, [field]: finalValue }
+    })
   }
 
   if (loading) {
@@ -277,7 +299,7 @@ export default function ROICalculator() {
       <Navbar 
         variant="dashboard" 
         showBackButton={true} 
-        backPath="/portfolio" 
+        backPath="/dashboard" 
       />
 
       {/* Main Content */}
@@ -311,11 +333,42 @@ export default function ROICalculator() {
                 </Alert>
               )}
 
+              {/* Property Selector */}
+              <div className="space-y-3 pb-2 pt-2">
+                <Label>Select Property from Portfolio</Label>
+                <Select
+                  value={id || "blank"}
+                  onValueChange={(val) => {
+                    if (val === "blank") {
+                      navigate('/roi-calculator')
+                      
+                      // Explicitly clear string inputs for UX
+                      setInputs({
+                        monthlyRent: '', purchasePrice: '', currentValue: '', downPayment: '', 
+                        monthlyExpenses: '', propertyTax: '', insurance: '', maintenance: '', managementFee: ''
+                      })
+                    } else {
+                      navigate(`/roi-calculator/${val}`)
+                    }
+                  }}
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Start with a blank calculator..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="blank">Empty Calculator</SelectItem>
+                    {allProperties.map(p => (
+                      <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
               {/* Property Info */}
               {property && (
                 <div className="p-4 bg-muted rounded-lg">
                   <p className="font-semibold">{property.name}</p>
-                  <p className="text-sm text-muted-foreground">{property.address}</p>
+                  <p className="text-sm text-muted-foreground">{property.address || 'No address provided'}</p>
                 </div>
               )}
 
@@ -329,7 +382,7 @@ export default function ROICalculator() {
                     type="number"
                     step="0.01"
                     value={inputs.monthlyRent}
-                    onChange={(e) => handleInputChange('monthlyRent', parseFloat(e.target.value) || 0)}
+                    onChange={(e) => handleInputChange('monthlyRent', e.target.value)}
                   />
                 </div>
               </div>
@@ -345,7 +398,7 @@ export default function ROICalculator() {
                       type="number"
                       step="0.01"
                       value={inputs.purchasePrice}
-                      onChange={(e) => handleInputChange('purchasePrice', parseFloat(e.target.value) || 0)}
+                      onChange={(e) => handleInputChange('purchasePrice', e.target.value)}
                     />
                   </div>
                   <div className="space-y-2">
@@ -355,7 +408,7 @@ export default function ROICalculator() {
                       type="number"
                       step="0.01"
                       value={inputs.currentValue}
-                      onChange={(e) => handleInputChange('currentValue', parseFloat(e.target.value) || 0)}
+                      onChange={(e) => handleInputChange('currentValue', e.target.value)}
                     />
                   </div>
                   <div className="space-y-2">
@@ -365,7 +418,7 @@ export default function ROICalculator() {
                       type="number"
                       step="0.01"
                       value={inputs.downPayment}
-                      onChange={(e) => handleInputChange('downPayment', parseFloat(e.target.value) || 0)}
+                      onChange={(e) => handleInputChange('downPayment', e.target.value)}
                     />
                   </div>
                 </div>
@@ -382,7 +435,7 @@ export default function ROICalculator() {
                       type="number"
                       step="0.01"
                       value={inputs.monthlyExpenses}
-                      onChange={(e) => handleInputChange('monthlyExpenses', parseFloat(e.target.value) || 0)}
+                      onChange={(e) => handleInputChange('monthlyExpenses', e.target.value)}
                     />
                   </div>
                   <div className="space-y-2">
@@ -392,7 +445,7 @@ export default function ROICalculator() {
                       type="number"
                       step="0.01"
                       value={inputs.propertyTax}
-                      onChange={(e) => handleInputChange('propertyTax', parseFloat(e.target.value) || 0)}
+                      onChange={(e) => handleInputChange('propertyTax', e.target.value)}
                     />
                   </div>
                   <div className="space-y-2">
@@ -402,7 +455,7 @@ export default function ROICalculator() {
                       type="number"
                       step="0.01"
                       value={inputs.insurance}
-                      onChange={(e) => handleInputChange('insurance', parseFloat(e.target.value) || 0)}
+                      onChange={(e) => handleInputChange('insurance', e.target.value)}
                     />
                   </div>
                   <div className="space-y-2">
@@ -412,7 +465,7 @@ export default function ROICalculator() {
                       type="number"
                       step="0.01"
                       value={inputs.maintenance}
-                      onChange={(e) => handleInputChange('maintenance', parseFloat(e.target.value) || 0)}
+                      onChange={(e) => handleInputChange('maintenance', e.target.value)}
                     />
                   </div>
                   <div className="space-y-2">
@@ -422,11 +475,28 @@ export default function ROICalculator() {
                       type="number"
                       step="0.01"
                       value={inputs.managementFee}
-                      onChange={(e) => handleInputChange('managementFee', parseFloat(e.target.value) || 0)}
+                      onChange={(e) => handleInputChange('managementFee', e.target.value)}
                     />
                   </div>
                 </div>
               </div>
+
+              {/* Save Back to Property */}
+              {property && (
+                <div className="pt-6 mt-4 border-t border-border">
+                  <Button 
+                    className="w-full h-11 flex items-center gap-2 font-medium" 
+                    onClick={handleSaveToProperty}
+                    disabled={savingProperty}
+                  >
+                    <Save className="h-4 w-4" />
+                    {savingProperty ? 'Saving to Database...' : 'Save Updates to Property'}
+                  </Button>
+                  <p className="text-xs text-muted-foreground text-center mt-3 leading-relaxed">
+                    This securely syncs your new expected Rent, Purchase Price, and Current Value estimates back to your property's master record.
+                  </p>
+                </div>
+              )}
             </CardContent>
           </Card>
 
@@ -501,21 +571,21 @@ export default function ROICalculator() {
                 <div className="space-y-2 text-sm">
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Purchase Price</span>
-                    <span>${(inputs.purchasePrice || 0).toLocaleString()}</span>
+                    <span>${Number(inputs.purchasePrice || 0).toLocaleString()}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Down Payment</span>
-                    <span>${(inputs.downPayment || 0).toLocaleString()}</span>
+                    <span>${Number(inputs.downPayment || 0).toLocaleString()}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Current Value</span>
-                    <span>${(inputs.currentValue || 0).toLocaleString()}</span>
+                    <span>${Number(inputs.currentValue || 0).toLocaleString()}</span>
                   </div>
-                  {inputs.currentValue > inputs.purchasePrice && (
+                  {Number(inputs.currentValue || 0) > Number(inputs.purchasePrice || 0) && (
                     <div className="flex justify-between pt-2 border-t text-primary font-semibold">
                       <span>Appreciation</span>
                       <span>
-                        +${((inputs.currentValue || 0) - (inputs.purchasePrice || 0)).toLocaleString()}
+                        +${(Number(inputs.currentValue || 0) - Number(inputs.purchasePrice || 0)).toLocaleString()}
                       </span>
                     </div>
                   )}

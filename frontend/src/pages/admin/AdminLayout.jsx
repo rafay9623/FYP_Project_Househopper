@@ -6,7 +6,8 @@ import {
     MessageSquare,
     LayoutDashboard,
     LogOut,
-    ShieldAlert
+    ShieldAlert,
+    BadgeCheck
 } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import { Button } from '@/components/ui/button'
@@ -15,6 +16,7 @@ const navItems = [
     { icon: LayoutDashboard, label: 'Dashboard', path: '/admin/dashboard' },
     { icon: Users, label: 'Users', path: '/admin/users' },
     { icon: Building2, label: 'Properties', path: '/admin/properties' },
+    { icon: BadgeCheck, label: 'Verification', path: '/admin/verification' },
     { icon: CreditCard, label: 'Subscriptions', path: '/admin/subscriptions' },
     { icon: MessageSquare, label: 'Chat Logs', path: '/admin/chats' },
 ]

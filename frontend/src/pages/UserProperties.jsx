@@ -2,7 +2,8 @@ import { useState, useEffect } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useAuth } from '@/contexts/AuthContext'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Home, User } from 'lucide-react'
+import { Badge } from '@/components/ui/badge'
+import { Home, User, CheckCircle, Clock, XCircle } from 'lucide-react'
 import { usersApi } from '@/services/api.service'
 import Navbar from '@/components/Navbar'
 
@@ -176,6 +177,27 @@ export default function UserProperties() {
                               <span className="inline-block text-sm bg-primary/10 text-primary px-3 py-1 rounded-full">
                                 {property.property_type}
                               </span>
+                            </div>
+                          )}
+
+                          {/* Authentication Status Badge */}
+                          {property.authStatus && property.authStatus !== 'none' && (
+                            <div className="pt-1">
+                              {property.authStatus === 'pending' && (
+                                <Badge variant="outline" className="bg-yellow-500/10 text-yellow-600 border-yellow-500/30 gap-1">
+                                  <Clock className="h-3 w-3" /> Pending Verification
+                                </Badge>
+                              )}
+                              {property.authStatus === 'verified' && (
+                                <Badge variant="outline" className="bg-emerald-500/10 text-emerald-600 border-emerald-500/30 gap-1">
+                                  <CheckCircle className="h-3 w-3" /> Verified
+                                </Badge>
+                              )}
+                              {property.authStatus === 'rejected' && (
+                                <Badge variant="outline" className="bg-red-500/10 text-red-600 border-red-500/30 gap-1">
+                                  <XCircle className="h-3 w-3" /> Rejected
+                                </Badge>
+                              )}
                             </div>
                           )}
                           

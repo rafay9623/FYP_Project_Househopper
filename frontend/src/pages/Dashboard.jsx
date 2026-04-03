@@ -1,9 +1,11 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '@/contexts/AuthContext'
+import { useSubscription } from '@/contexts/SubscriptionContext'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { LogOut, Plus, Home, Calculator, Users, Loader2, Bot, Map, Sparkles } from 'lucide-react'
+import { Badge } from '@/components/ui/badge'
+import { LogOut, Plus, Home, Calculator, Users, Loader2, Bot, Map, Sparkles, Lock, Crown, CreditCard } from 'lucide-react'
 import { propertiesApi } from '@/services/api.service'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useToast } from '@/hooks/use-toast'
@@ -11,6 +13,7 @@ import Navbar from '@/components/Navbar'
 
 export default function Dashboard() {
   const { user, loading: authLoading } = useAuth()
+  const { plan, canAccess, loading: planLoading } = useSubscription()
   const navigate = useNavigate()
   const { toast } = useToast()
   const [propertyCount, setPropertyCount] = useState(0)
@@ -21,21 +24,25 @@ export default function Dashboard() {
   const loadStats = useCallback(async () => {
     try {
       setLoading(true)
-      const response = await propertiesApi.getAll()
-      const properties = response.properties || response || []
-
-      setPropertyCount(properties.length)
-
-      const total = properties.reduce((sum, p) => sum + (p.current_value || p.purchase_price || 0), 0)
-      setTotalValue(total)
-
-      const totalRent = properties.reduce((sum, p) => sum + (p.monthly_rent || 0), 0) * 12
-      const totalPurchase = properties.reduce((sum, p) => sum + (p.purchase_price || 0), 0)
-      const avg = totalPurchase > 0 ? (totalRent / totalPurchase) * 100 : 0
-      setAvgROI(avg)
+      // Optimized: Fetch only stats instead of all property objects
+      const response = await propertiesApi.getStats()
+      
+      if (response.success) {
+        setPropertyCount(response.propertyCount || 0)
+        setTotalValue(response.totalValue || 0)
+        setAvgROI(response.avgROI || 0)
+      } else {
+        // Fallback to old method if stats endpoint fails
+        const properties = await propertiesApi.getAll('purchase_price,current_value,monthly_rent')
+        setPropertyCount(properties.length)
+        const total = properties.reduce((sum, p) => sum + (p.current_value || p.purchase_price || 0), 0)
+        setTotalValue(total)
+        const totalRent = properties.reduce((sum, p) => sum + (p.monthly_rent || 0), 0) * 12
+        const totalPurchase = properties.reduce((sum, p) => sum + (p.purchase_price || 0), 0)
+        setAvgROI(totalPurchase > 0 ? (totalRent / totalPurchase) * 100 : 0)
+      }
     } catch (error) {
       console.error('Error loading stats:', error)
-      // Don't show error toast for 404 or empty results - just set defaults
       if (error.status !== 404) {
         toast({
           title: 'Error Loading Dashboard',
@@ -43,7 +50,6 @@ export default function Dashboard() {
           variant: 'destructive',
         })
       }
-      // Set defaults for empty state
       setPropertyCount(0)
       setTotalValue(0)
       setAvgROI(0)
@@ -52,11 +58,60 @@ export default function Dashboard() {
     }
   }, [toast])
 
+
   useEffect(() => {
     if (!authLoading) {
       loadStats()
     }
   }, [authLoading, loadStats])
+
+  const getPlanBadge = () => {
+    switch (plan) {
+      case 'premium':
+        return <Badge className="bg-amber-500 text-white border-none gap-1"><Crown className="h-3 w-3" /> Premium</Badge>
+      case 'intermediate':
+        return <Badge className="bg-blue-500 text-white border-none gap-1"><Sparkles className="h-3 w-3" /> Intermediate</Badge>
+      default:
+        return <Badge variant="outline" className="gap-1">Basic (Free)</Badge>
+    }
+  }
+
+  const FeatureCard = ({ title, description, icon: Icon, onClick, feature, className = '' }) => {
+    const locked = feature && !canAccess(feature)
+
+    return (
+      <Card
+        className={`cursor-pointer transition relative overflow-hidden ${locked ? 'opacity-60 hover:opacity-80' : 'hover:border-primary'} ${className}`}
+        onClick={() => {
+          if (locked) {
+            navigate('/pricing')
+          } else {
+            onClick()
+          }
+        }}
+      >
+        {locked && (
+          <div className="absolute top-2 right-2">
+            <Lock className="h-4 w-4 text-muted-foreground" />
+          </div>
+        )}
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Icon className="h-5 w-5" />
+            {title}
+            {locked && (
+              <Badge variant="outline" className="text-[10px] px-1.5 py-0 ml-auto">
+                Upgrade
+              </Badge>
+            )}
+          </CardTitle>
+          <CardDescription>
+            {description}
+          </CardDescription>
+        </CardHeader>
+      </Card>
+    )
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-background to-muted">
@@ -64,11 +119,20 @@ export default function Dashboard() {
 
       <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8 py-12">
         <div className="space-y-8">
-          <div className="text-center space-y-4">
-            <h1 className="text-4xl font-bold text-foreground">Welcome to Your Dashboard</h1>
-            <p className="text-lg text-foreground/70">
-              Start by adding your first property to track ROI and manage your real estate portfolio.
-            </p>
+          <div className="flex items-center justify-between">
+            <div className="space-y-2">
+              <h1 className="text-4xl font-bold text-foreground">Welcome to Your Dashboard</h1>
+              <p className="text-lg text-foreground/70">
+                Track ROI and manage your real estate portfolio.
+              </p>
+            </div>
+            <div className="flex items-center gap-3">
+              {getPlanBadge()}
+              <Button variant="outline" size="sm" className="gap-1.5" onClick={() => navigate('/pricing')}>
+                <CreditCard className="h-3.5 w-3.5" />
+                {plan === 'basic' ? 'Upgrade' : 'Plans'}
+              </Button>
+            </div>
           </div>
 
           <div className="grid gap-8 md:grid-cols-3">
@@ -78,9 +142,11 @@ export default function Dashboard() {
               </CardHeader>
               <CardContent>
                 {loading || authLoading ? (
-                  <Skeleton className="h-10 w-20 mb-2" />
+                  <Skeleton className="h-10 w-16 mb-2" />
                 ) : (
-                  <div className="text-4xl font-bold text-primary mb-2">{propertyCount}</div>
+                  <div className="text-4xl font-bold text-primary mb-2">
+                    {propertyCount}
+                  </div>
                 )}
                 <p className="text-foreground/70">Total Properties</p>
               </CardContent>
@@ -93,8 +159,8 @@ export default function Dashboard() {
                 {loading || authLoading ? (
                   <Skeleton className="h-10 w-32 mb-2" />
                 ) : (
-                  <div className="text-4xl font-bold text-accent mb-2">
-                    ${totalValue.toLocaleString()}
+                  <div className="text-4xl font-bold text-primary mb-2">
+                    PKR {totalValue.toLocaleString()}
                   </div>
                 )}
                 <p className="text-foreground/70">Portfolio Value</p>
@@ -118,107 +184,71 @@ export default function Dashboard() {
           </div>
 
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-            <Card
-              className="cursor-pointer hover:border-primary transition"
+            <FeatureCard
+              title="Add Property"
+              description="Add a new property to your portfolio"
+              icon={Plus}
               onClick={() => navigate('/add-property')}
-            >
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Plus className="h-5 w-5" />
-                  Add Property
-                </CardTitle>
-                <CardDescription>
-                  Add a new property to your portfolio
-                </CardDescription>
-              </CardHeader>
-            </Card>
-            <Card
-              className="cursor-pointer hover:border-primary transition"
+            />
+            <FeatureCard
+              title="View Portfolio"
+              description="Manage all your properties"
+              icon={Home}
               onClick={() => navigate('/portfolio')}
-            >
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Home className="h-5 w-5" />
-                  View Portfolio
-                </CardTitle>
-                <CardDescription>
-                  Manage all your properties
-                </CardDescription>
-              </CardHeader>
-            </Card>
-            <Card
-              className="cursor-pointer hover:border-blue-500 transition text-blue-500"
+            />
+            <FeatureCard
+              title="Explore Heatmap"
+              description="Visualise property density on map"
+              icon={Map}
               onClick={() => navigate('/heat-map')}
-            >
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Map className="h-5 w-5" />
-                  Explore Heatmap
-                </CardTitle>
-                <CardDescription className="text-foreground/70">
-                  Visualise property density on map
-                </CardDescription>
-              </CardHeader>
-            </Card>
-            <Card
-              className="cursor-pointer hover:border-primary transition"
+              feature="heatmap"
+              className="text-blue-500"
+            />
+            <FeatureCard
+              title="ROI Calculator"
+              description="Calculate returns on your properties"
+              icon={Calculator}
               onClick={() => navigate('/roi-calculator')}
-            >
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Calculator className="h-5 w-5" />
-                  ROI Calculator
-                </CardTitle>
-                <CardDescription>
-                  Calculate returns on your properties
-                </CardDescription>
-              </CardHeader>
-            </Card>
-            <Card
-              className="cursor-pointer hover:border-primary transition"
+              feature="roi"
+            />
+            <FeatureCard
+              title="Browse Investors"
+              description="View properties from other investors"
+              icon={Users}
               onClick={() => navigate('/browse-users')}
-            >
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Users className="h-5 w-5" />
-                  Browse Investors
-                </CardTitle>
-                <CardDescription>
-                  View properties from other investors
-                </CardDescription>
-              </CardHeader>
-            </Card>
-            <Card
-              className="cursor-pointer hover:border-yellow-500 transition bg-yellow-500/5 border-yellow-500/20"
+            />
+            <FeatureCard
+              title="AI Recommendations"
+              description="Get AI-powered property suggestions"
+              icon={Sparkles}
               onClick={() => navigate('/recommendations')}
-            >
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Sparkles className="h-5 w-5 text-yellow-500" />
-                  AI Recommendations
-                </CardTitle>
-                <CardDescription>
-                  Get AI-powered property suggestions
-                </CardDescription>
-              </CardHeader>
-            </Card>
-            <Card
-              className="cursor-pointer hover:border-secondary transition bg-secondary/5 border-secondary/20"
+              feature="recommendations"
+              className="bg-yellow-500/5 border-yellow-500/20"
+            />
+            <FeatureCard
+              title="AI Assistant"
+              description="Chat with HouseHopper AI for insights"
+              icon={Bot}
               onClick={() => navigate('/chat')}
+              className="bg-secondary/5 border-secondary/20"
+            />
+            <Card
+              className="cursor-pointer hover:border-primary transition bg-gradient-to-br from-primary/5 to-secondary/5 border-primary/20"
+              onClick={() => navigate('/pricing')}
             >
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <Bot className="h-5 w-5 text-secondary" />
-                  AI Assistant
+                  <Crown className="h-5 w-5 text-amber-500" />
+                  View Plans
                 </CardTitle>
                 <CardDescription>
-                  Chat with HouseHopper AI for insights
+                  {plan === 'basic' ? 'Upgrade to unlock more features' : 'Manage your subscription'}
                 </CardDescription>
               </CardHeader>
             </Card>
           </div>
         </div>
       </div>
-    </div >
+    </div>
   )
 }

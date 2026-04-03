@@ -5,11 +5,18 @@ const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001'
 async function fetchWithAuth(url, options = {}) {
   const fullUrl = `${API_BASE_URL}${url}`
 
-  // Get Firebase token if available
+  // Get auth token — either from Firebase or from admin bypass session
   let token = null
   try {
     if (auth && auth.currentUser) {
       token = await auth.currentUser.getIdToken()
+    }
+    // Fallback: check for admin bypass session stored by AuthContext
+    if (!token) {
+      const adminSession = localStorage.getItem('__admin_session__')
+      if (adminSession) {
+        token = 'admin-token'
+      }
     }
   } catch (error) {
     console.warn('Could not get auth token:', error)
@@ -162,10 +169,24 @@ export const authApi = {
 
 // Properties API
 export const propertiesApi = {
-  getAll: async () => {
-    const response = await fetchWithAuth('/api/properties')
+  getAll: async (fields = null) => {
+    const url = fields ? `/api/properties?fields=${fields}` : '/api/properties'
+    const response = await fetchWithAuth(url)
     // Handle both response formats: { properties: [] } or []
     return response.properties || response
+  },
+  getStats: async () => {
+    const response = await fetchWithAuth('/api/properties/stats')
+    return response
+  },
+
+  adminGetAll: async () => {
+    const response = await fetchAsAdmin('/api/properties/admin/all')
+    return response.properties || response
+  },
+  adminGetStats: async () => {
+    const response = await fetchAsAdmin('/api/properties/admin/stats')
+    return response.stats || response
   },
   getById: async (id) => {
     const response = await fetchWithAuth(`/api/properties/${id}`)
@@ -216,11 +237,23 @@ export const portfoliosApi = {
     }),
 }
 
+// Conversations API
+export const conversationsApi = {
+  adminGetAll: async () => {
+    const response = await fetchAsAdmin('/api/conversations/admin/all')
+    return response.conversations || response
+  },
+}
+
 // Users API
 export const usersApi = {
   getAll: async () => {
     const response = await fetchWithAuth('/api/users')
     // Handle both response formats: { users: [] } or []
+    return response.users || response
+  },
+  adminGetAll: async () => {
+    const response = await fetchAsAdmin('/api/users/admin/all')
     return response.users || response
   },
   getById: async (id) => {
@@ -241,4 +274,92 @@ export const recommendationsApi = {
   checkHealth: async () => {
     return fetchWithAuth('/api/recommendations/service/health')
   },
+}
+
+/**
+ * Fetch helper for admin-only endpoints.
+ * Uses the hardcoded 'admin-token' from the admin bypass session.
+ */
+async function fetchAsAdmin(url, options = {}) {
+  const fullUrl = `${API_BASE_URL}${url}`
+
+  const headers = {
+    'Content-Type': 'application/json',
+    'Authorization': 'Bearer admin-token',
+    ...options.headers,
+  }
+
+  console.log(`🛡️ Admin API Request: ${options.method || 'GET'} ${fullUrl}`)
+
+  try {
+    const response = await fetch(fullUrl, {
+      ...options,
+      headers,
+    })
+
+    if (!response.ok) {
+      let errorMessage = `HTTP error! status: ${response.status}`
+      try {
+        const errorData = await response.json()
+        errorMessage = errorData.error || errorData.message || errorMessage
+      } catch (e) { /* ignore parse errors */ }
+      const error = new Error(errorMessage)
+      error.status = response.status
+      throw error
+    }
+
+    return await response.json()
+  } catch (error) {
+    if (error instanceof TypeError && (error.message.includes('fetch') || error.message.includes('Failed to fetch'))) {
+      const networkError = new Error('Unable to connect to server. Please make sure the backend server is running.')
+      networkError.isNetworkError = true
+      throw networkError
+    }
+    throw error
+  }
+}
+
+// Property Authentication API
+export const propertyAuthApi = {
+  // User endpoints
+  submitRequest: (propertyId, { idCardImage, propertyDocument }) =>
+    fetchWithAuth(`/api/property-auth/request/${propertyId}`, {
+      method: 'POST',
+      body: JSON.stringify({ idCardImage, propertyDocument }),
+    }),
+
+  getMyRequests: () =>
+    fetchWithAuth('/api/property-auth/my-requests'),
+
+  // Admin endpoints
+  getAllRequests: async (status) => {
+    const query = status ? `?status=${status}` : ''
+    return fetchAsAdmin(`/api/property-auth/admin/all${query}`)
+  },
+
+  reviewRequest: (requestId, action, adminNote = '') =>
+    fetchAsAdmin(`/api/property-auth/admin/review/${requestId}`, {
+      method: 'PUT',
+      body: JSON.stringify({ action, adminNote }),
+    }),
+}
+
+// Subscription API
+export const subscriptionApi = {
+  getPlan: () => fetchWithAuth('/api/subscription/plan'),
+
+  createCheckout: (planId) =>
+    fetchWithAuth('/api/subscription/checkout', {
+      method: 'POST',
+      body: JSON.stringify({ planId }),
+    }),
+
+  verifySession: (sessionId) =>
+    fetchWithAuth('/api/subscription/verify-session', {
+      method: 'POST',
+      body: JSON.stringify({ sessionId }),
+    }),
+
+  createPortalSession: () =>
+    fetchWithAuth('/api/subscription/portal', { method: 'POST' }),
 }
