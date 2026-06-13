@@ -3,12 +3,16 @@ import { getAuth } from 'firebase/auth'
 
 // Firebase configuration
 const firebaseConfig = {
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || "AIzaSyCKn-tjGJWey9d4rvvSc2H7gI3sTkME0R0",
-  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || "househoppers-818b7.firebaseapp.com",
-  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || "househoppers-818b7",
-  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || "househoppers-818b7.firebasestorage.app",
-  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || "749534899710",
-  appId: import.meta.env.VITE_FIREBASE_APP_ID || "1:749534899710:web:bd38d1c59b8ec1303b24af"
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+  appId: import.meta.env.VITE_FIREBASE_APP_ID
+}
+
+if (!firebaseConfig.apiKey) {
+  throw new Error('Firebase configuration missing. Ensure VITE_FIREBASE_* env vars are set.')
 }
 
 // Initialize Firebase (only if not already initialized)

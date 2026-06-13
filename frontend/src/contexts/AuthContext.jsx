@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, useMemo } from 'react'
+import { createContext, useContext, useState, useEffect, useMemo, useCallback } from 'react'
 import {
   onAuthStateChanged,
   signInWithEmailAndPassword,
@@ -66,8 +66,8 @@ export function AuthProvider({ children }) {
     return () => unsubscribe()
   }, [])
 
-  const ADMIN_EMAIL = 'youngdumbrokedie@gmail.com'
-  const ADMIN_PASSWORD = 'rafayhadizahid_1'
+  const ADMIN_EMAIL = import.meta.env.VITE_ADMIN_EMAIL
+  const ADMIN_PASSWORD = import.meta.env.VITE_ADMIN_PASSWORD
 
   const signIn = async (email, password) => {
     if (!auth) {
@@ -261,12 +261,31 @@ export function AuthProvider({ children }) {
     setUserProfile(null)
   }
 
-  const getToken = async () => {
+  const getToken = async (forceRefresh = false) => {
     if (user) {
-      return await user.getIdToken()
+      return await user.getIdToken(forceRefresh)
     }
     return null
   }
+
+  const refreshProfile = useCallback(async () => {
+    if (!user) return null
+
+    try {
+      console.log('🔄 Refreshing user profile...')
+      const idToken = await user.getIdToken(true)
+      const profile = await authApi.getProfile(idToken)
+      if (profile.user) {
+        setUserProfile(profile.user)
+        console.log('✅ User profile refreshed successfully')
+        return profile.user
+      }
+      return null
+    } catch (error) {
+      console.error('❌ Failed to refresh user profile:', error)
+      throw error
+    }
+  }, [user])
 
   const value = useMemo(() => ({
     user,
@@ -278,9 +297,10 @@ export function AuthProvider({ children }) {
     signUp,
     signOut,
     getToken,
+    refreshProfile,
     resendVerificationEmail,
     sendPasswordReset
-  }), [user, userProfile, loading])
+  }), [user, userProfile, loading, refreshProfile])
 
   return (
     <AuthContext.Provider value={value}>

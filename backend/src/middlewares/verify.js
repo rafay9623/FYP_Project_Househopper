@@ -31,18 +31,7 @@ export async function verifyToken(req, res, next) {
       })
     }
 
-    // Admin bypass — matches the hardcoded token from the frontend admin session
-    if (idToken === 'admin-token') {
-      req.user = {
-        uid: 'admin-uid',
-        email: 'youngdumbrokedie@gmail.com',
-        emailVerified: true,
-        name: 'System Admin',
-        role: 'admin'
-      }
-      console.log('✅ Admin token bypass — admin user attached')
-      return next()
-    }
+
 
     // Verify the token with Firebase Admin
     const auth = getAuth()
@@ -183,7 +172,7 @@ export function requireRole(...roles) {
  * Verifies the hardcoded admin token used by the frontend admin session.
  * The admin account is not a real Firebase Auth user, so verifyToken would fail.
  */
-export function verifyAdmin(req, res, next) {
+export async function verifyAdmin(req, res, next) {
   try {
     const authHeader = req.headers.authorization
 
@@ -195,14 +184,29 @@ export function verifyAdmin(req, res, next) {
     }
 
     const token = authHeader.split('Bearer ')[1]
+    if (!token) {
+      return res.status(401).json({
+        success: false,
+        error: 'No token provided'
+      })
+    }
 
-    if (token === 'admin-token') {
-      req.user = {
-        uid: 'admin-uid',
-        email: 'youngdumbrokedie@gmail.com',
-        role: 'admin'
-      }
-      console.log('✅ Admin token verified')
+    const auth = getAuth()
+    const decodedToken = await auth.verifyIdToken(token)
+
+    // First check Firebase custom claims (best practice)
+    if (decodedToken.admin === true) {
+      req.user = { uid: decodedToken.uid, email: decodedToken.email, role: 'admin' }
+      return next()
+    }
+
+    // Fallback: check Firestore role
+    const { getFirestore } = await import('../config/firebase_config.js')
+    const db = getFirestore()
+    const userDoc = await db.collection('users').doc(decodedToken.uid).get()
+    
+    if (userDoc.exists && userDoc.data().role === 'admin') {
+      req.user = { uid: decodedToken.uid, email: decodedToken.email, role: 'admin' }
       return next()
     }
 
@@ -212,7 +216,7 @@ export function verifyAdmin(req, res, next) {
     })
   } catch (error) {
     console.error('❌ Admin verification failed:', error.message)
-    return res.status(500).json({
+    return res.status(401).json({
       success: false,
       error: 'Admin authorization check failed'
     })

@@ -35,7 +35,7 @@ export function initializeFirebase() {
       console.log('✅ Firebase initialized with environment variables')
     } else {
       // Try service account file located in the backend root
-      const serviceAccountPath = join(__dirname, '../../firebase-service-account.json')
+      const serviceAccountPath = join(__dirname, '../../.env.firebase-service-account.json')
       
       if (existsSync(serviceAccountPath)) {
         const serviceAccount = JSON.parse(readFileSync(serviceAccountPath, 'utf8'))
