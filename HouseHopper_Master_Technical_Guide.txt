@@ -1,0 +1,216 @@
+# HouseHopper: Full Technical Documentation & Viva Master Guide
+
+## 1. Project Overview
+**HouseHopper** is an AI-powered real estate investment and property management platform. It leverages modern web technologies and Artificial Intelligence to provide users with data-driven property insights, ROI calculations, and personalized recommendations.
+
+---
+
+## 2. System Architecture
+The system follows a **decoupled 3-tier Architecture** designed for high performance, modular scalability, and secure data orchestration.
+
+### High-Level Architecture Diagram
+```mermaid
+graph TD
+    User((User)) <--> Frontend[React Vite Frontend]
+    Frontend <--> Backend[Node.js Express Backend]
+    Backend <--> ML[Python FastAPI Microservice]
+    Backend <--> Firebase[(Firebase Admin SDK)]
+    Backend <--> Gemini[Google Gemini 1.5 Flash AI]
+    ML <--> Models[(ML Models & Data)]
+    Firebase <--> Auth[Firebase Auth]
+    Firebase <--> Firestore[Cloud Firestore]
+    Firebase <--> Storage[Firebase Storage]
+```
+
+---
+
+## 3. Core Modules & Component Analysis
+
+### A. Frontend (Presentation Layer)
+- **Technology**: React 19, Vite, Tailwind CSS.
+- **State Management**: Uses **React Context API** (`AuthContext.jsx`, `SubscriptionContext.jsx`) to manage global user sessions and plan-based feature permissions.
+- **API Wrapper**: Centralized HTTP client in `api.service.js` that handles Firebase ID token injection and standardized error parsing.
+- **Key Components**:
+    - `Chatbot.jsx`: Interactive AI assistant interface.
+    - `RecommendedProperties.jsx`: Dynamic display for ML-suggested listings.
+    - `Navbar.jsx`: Context-aware navigation for Users vs. Admins.
+
+### B. Backend (Orchestration Layer)
+- **Technology**: Node.js, Express.
+- **Security Middleware**: `verify.js` uses **Firebase Admin SDK** to validate JWT ID tokens and custom claims (e.g. `decodedToken.admin`) on every request, ensuring only authenticated users can access private routes. The legacy `admin-token` bypass has been strictly removed.
+- **Controllers**:
+    - `auth/`: Modularized authentication logic (`signup.js`, `login.js`, etc.).
+    - `chat.js`: Manages AI interactions and RAG (Retrieval-Augmented Generation).
+    - `properties.js`: Handles Property CRUD with plan-based limits (Basic: 5, Intermediate: 20, Premium: 1000).
+    - `subscription.js`: Manages Stripe checkout sessions and lifetime payment activation.
+    - `propertyAuth.js`: Coordinates property verification via registry matching.
+- **Utilities**: Standardized API formatting (`response.js`), async error handling (`asyncHandler.js`), structured logging (`logger.js`), and Zod validation (`validators.js`).
+
+### C. ML Microservice (Computation Layer)
+- **Technology**: Python 3.x, FastAPI, PyTorch, Pandas.
+- **Recommendation Engine**: Loads pre-trained property embeddings (`embeddings.pt`) and performs **Cosine Similarity** calculations to find the most relevant matches for a given property.
+
+---
+
+## 4. Technical Deep-Dive: Internal Logic
+
+### I. The Recommendation Engine (Cosine Similarity)
+*   **Logic**: Uses **Content-Based Filtering**.
+*   **Algorithm**:
+    1.  Properties are vectorized into $D$-dimensional space.
+    2.  For a given `propertyId`, the service calculates the dot product between its vector and all others.
+    3.  **Formula**: $\text{similarity} = \frac{A \cdot B}{\|A\| \|B\|}$
+*   **Fallback Mechanism**: If the Python service is offline, the Node.js backend executing `computeFirestoreSimilarity()` performs a weighted multi-field match (City, Price, Type) to ensure user results are always available.
+
+### II. AI Chatbot & RAG Pattern (Retrieval-Augmented Generation)
+*   **Logic**: Grounds **Google Gemini 1.5 Flash** in real database data.
+*   **Execution**:
+    1.  **Retrieve**: Fetches user's portfolio and market data from Firestore.
+    2.  **Augment**: Injects this data into a System Prompt.
+    3.  **Generate**: Gemini produces a response specifically referencing the actual property IDs in the context.
+*   **Rate Limiting**: Employs a **Rolling 24-hour Window**. Basic users are limited to 10 messages per day, tracked atomically in `chat_usage/{userId}`.
+
+### III. Property Verification Algorithm
+*   **Logic**: Automates owner verification by matching against a trusted `admin_property_registry`.
+*   **Process**:
+    1.  Normalizes address strings (removes spaces, capitalization).
+    2.  Matches physical `area` with a $\pm 0.1$ tolerance.
+    3.  Uploads ID Cards and Deeds as binary streams to **Firebase Storage** with randomized UUID filenames for security.
+
+### IV. Security & Code Quality Standards
+*   **Environment Segregation**: All API keys, Firebase config, and Admin credentials are strictly managed via `.env` files. The service account JSON is secured as `.env.firebase-service-account.json` and `.gitignore`d.
+*   **Data Hydration Optimization**: The `getRecommendations` endpoint uses `Promise.all` to hydrate ML recommendations from Firestore concurrently, massively improving speed over sequential reads.
+*   **Query Optimization**: Replaced full-collection scans in `getAllConversations` with targeted, indexed `.where()` queries.
+*   **Data Sanitization**: The User model automatically strips sensitive fields (e.g., `stripeCustomerId`, `password`) via `sanitizeUserForResponse` before returning data to the frontend.
+
+---
+
+## 5. Inter-Server Communication Protocols
+
+| Handshake | Protocol | Data Format | Security |
+| :--- | :--- | :--- | :--- |
+| **React ??? Node.js** | REST (HTTP/1.1) | JSON | Firebase ID Token (Bearer) |
+| **Node.js ??? Python** | REST (HTTP/1.1) | JSON | Internal Network Port 5001 |
+| **Node.js ??? Firebase** | Admin SDK (gRPC) | Native Objects | Private Key (Service Account) |
+| **Node.js ??? Stripe** | REST (HTTPS) | JSON | Stripe Secret Key |
+
+---
+
+## 6. File & Module Mapping (Backend)
+
+| Module | File Path | Responsibility |
+| :--- | :--- | :--- |
+| **Entry Point** | `backend/index.js` | Express Server, Middleware initialization. |
+| **Real Estate API** | `controllers/properties.js` | CRUD, Caching (`node-cache`), Stats. |
+| **AI Controller** | `controllers/chat.js` | History management, RAG prompt. |
+| **ML Client** | `controllers/recommendations.js` | Invokes Python service, enriched result mapping. |
+| **Auth Middleware** | `middlewares/verify.js` | JWT verification, Admin bypass. |
+| **Billing Service** | `services/subscription.js` | Stripe Session & Webhook logic. |
+
+---
+
+## 7. Database Architecture (Firestore)
+- **`users`**: Profiles, subscription tiers, and Stripe customer IDs.
+- **`properties`**: Geometric data, current values, and ownership links.
+- **`conversations`**: Metadata for chat sessions.
+- **`conversations/{id}/messages`**: Hierarchical storage for message history.
+- **`property_auth_requests`**: Evidence and status for ownership verification.
+
+---
+
+## 8. How to Run (Development Sequence)
+1. **Machine Learning Service**:
+   ```bash
+   cd ml && uvicorn app:app --port 5001 --reload
+   ```
+2. **Backend API**:
+   ```bash
+   cd backend && npm run dev
+   ```
+3. **React Frontend**:
+   ```bash
+   cd frontend && npm run dev
+   ```
+
+---
+
+## 9. Viva Mastery: Key Talking Points & FAQ
+
+### Key Differentiators:
+1.  **Decoupled ML**: Offloading vector math to Python ensures the main API remains responsive.
+2.  **Stateless Auth**: Using Firebase JWTs allows the backend to be horizontally scaled without session affinity issues.
+3.  **Local Dev Resilience**: Implemented a "Manual Verify" route for Stripe to simulate webhooks on `localhost`.
+4.  **Parallel Data Fetching**: By utilizing `Promise.all` to hydrate recommendations from Firestore concurrently, we drastically cut down ML pipeline response times.
+5.  **Strict Secrets Management**: Moving all Firebase config, admin credentials, and service accounts strictly into `.env` logic completely prevents hardcoded credential leaks.
+
+### Technical FAQ:
+**Q: How do you prevent database "Junk" in Property submissions?**
+**A**: We use Regex-based pattern validation and Zod schema validators (`utils/validators.js`) before any document is saved.
+
+**Q: Why use Firestore Sub-collections for Chat?**
+**A**: This optimizes "Read Costs". We only fetch the specific messages for an active conversation instead of loading a massive "messages" array into memory. Furthermore, queries like `getAllConversations` are tightly indexed (`.where('userId', '==', uid)`) to prevent full-table scans.
+
+**Q: What is the benefit of the Gemini 1.5 Flash model specifically?**
+**A**: It offers a massive context window and low latency, making it ideal for the RAG pattern where we inject a large number of property listings into the prompt.
+
+---
+
+## 10. Project File Registry: Technical Deep-Dive
+
+### A. Backend Core (Node.js / Express)
+
+#### ???? `backend/src/config/`
+- **`firebase_config.js`**: Initializes the Firebase Admin SDK. It handles the `credential` setup using the service account key and exports `auth`, `firestore`, and `storage` (bucket) instances for use across the app.
+- **`gemini_config.js`**: Sets up the Google Generative AI SDK. It configures the `GoogleGenerativeAI` client with the `GEMINI_API_KEY` and exports the `gemini-1.5-flash` model instance.
+
+#### ???? `backend/src/middlewares/`
+- **`verify.js`**: Contains the `verifyToken` middleware which extracts the Bearer token from headers and uses `auth().verifyIdToken()` to validate it. Securely uses custom claims (`decodedToken.admin`) and Firestore roles for the `verifyAdmin` middleware.
+- **`planAccess.js`**: Enforces subscription-based access control.
+
+#### ???? `backend/src/routes/`
+- **`auth.js`**: Handles user lifecycle routes via the modular `controllers/auth/index.js`.
+- **`properties.js`**: Routes for property management, including public heatmaps, admin stats, and full CRUD for user portfolios.
+- **`chat.js`**: Single endpoint `POST /message` for the AI assistant, protected by auth.
+- **`subscription.js`**: Coordinates Stripe interactions: session creation, verification, and webhooks.
+
+#### ???? `backend/src/controllers/`
+- **`auth/`**: Modular sub-controllers (`signup.js`, `login.js`, `profile.js`, `verify.js`) to handle authentication and profile management securely.
+- **`properties.js`**: Implements complex logic for property limits, image handling via base64, and **ROI calculations**.
+- **`chat.js`**: Orchestrates the **RAG flow**.
+- **`recommendations.js`**: The bridge to the Python service. Uses concurrent Promise execution to hydrate ML matches efficiently.
+- **`propertyAuth.js`**: Manages the verification pipeline.
+
+#### ???? `backend/src/utils/` (Core Utilities)
+- **`response.js`**: Standardizes API responses (`successResponse`, `errorResponse`).
+- **`logger.js`**: Replaces basic console logs with structured logging.
+- **`asyncHandler.js`**: Wraps async controllers to cleanly pass errors to Express middleware.
+- **`validators.js`**: Contains Zod schemas for input validation.
+
+#### ???? `backend/src/services/`
+- **`storage.js`**: Utility for handling Google Cloud Storage uploads (used for property images and verification docs).
+- **`emailService.js`**: A multi-provider service (SendGrid/SES/SMTP) for sending verification and transactional emails.
+
+### B. Frontend Architecture (React / Vite)
+
+#### ???? `frontend/src/contexts/`
+- **`AuthContext.jsx`**: Centralizes Firebase Auth logic. It provides `user`, `signIn`, `signUp`, and `signOut` methods. It also manages "Admin Bypass" session hydration from localStorage.
+- **`SubscriptionContext.jsx`**: Maps user plans to feature access. It provides the `canAccess(feature)` helper used throughout the UI to gate buttons/views.
+
+#### ???? `frontend/src/services/`
+- **`api.service.js`**: The single source of truth for backend communication. It automatically injects the Firebase ID token into headers and provides modular API groups (`authApi`, `propertiesApi`, etc.).
+
+#### ???? `frontend/src/pages/`
+- **`Dashboard.jsx`**: The main user hub, aggregating portfolio stats, recent activity, and quick actions.
+- **`Recommendations.jsx`**: A specialized view that allows users to select a seed property to generate AI-suggested matches.
+- **`ChatPage.jsx`**: A dedicated interface for the AI assistant, supporting persisted conversation history.
+- **`HeatMapPage.jsx`**: Visualizes property densities using the Google Maps Heatmap layer.
+
+#### ???? `frontend/src/components/`
+- **`Chatbot.jsx`**: A floating, interactive component accessible from any page, integrated with the Chat context.
+- **`Navbar.jsx`**: A responsive navigation bar that changes its links based on `role` (Admin vs. User) and `isAuthenticated` status.
+
+### C. Machine Learning Microservice (Python)
+
+#### ???? `ml/`
+- **`app.py`**: A FastAPI application. It loads `embeddings.pt` (tensors) into memory on startup and serves the `/recommend` endpoint, executing the PyTorch-based similarity matrix multiplication.
+- **`models/`**: Contains the serialized data structures (`dataframe.pkl` and `embeddings.pt`) used by the engine.
