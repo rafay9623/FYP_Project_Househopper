@@ -75,7 +75,8 @@ export function validateSignupData(data) {
  * Sanitize user data for response (remove sensitive fields)
  */
 export function sanitizeUserForResponse(user) {
-  const { password, ...safeUser } = user
+  if (!user) return null
+  const { password, stripeCustomerId, stripePaymentIntentId, ...safeUser } = user
   return safeUser
 }
 
