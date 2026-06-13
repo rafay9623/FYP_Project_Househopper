@@ -178,59 +178,58 @@ export async function getRecommendations(req, res) {
     // We try to enrich from Firestore, but fall back to the Python data if
     // the property isn't stored in Firestore (e.g. Zameen dataset entries).
     const db = getFirestore()
-    const enrichedRecommendations = []
-
-    for (const rec of recommendationData.recommendations) {
-      const recId = rec.propertyId || rec.id
-      let entry = {
-        id: recId,
-        score: rec.score,
-        matchPercentage: Math.round((rec.score || 0) * 100),
-        name: rec.name || 'Property',
-        property_type: rec.property_type || null,
-        purchase_price: rec.purchase_price || rec.price || null,
-        current_value: rec.current_value || rec.price || null,
-        monthly_rent: rec.monthly_rent || null,
-        address: rec.address || rec.location || null,
-        addressCity: rec.addressCity || rec.city || null,
-        addressProvince: rec.addressProvince || null,
-        description: rec.description || null,
-        image_url: rec.image_url || null,
-        location: rec.location || null,
-        bedrooms: rec.bedrooms || null,
-        baths: rec.baths || null,
-        area: rec.area || null,
-        area_type: rec.area_type || null,
-        purpose: rec.purpose || null,
-      }
-
-      // Try Firestore enrichment (overwrite with richer data if it exists)
-      try {
-        const doc = await db.collection(PROPERTIES_COLLECTION).doc(recId).get()
-        if (doc.exists) {
-          const data = doc.data()
-          entry = {
-            ...entry,
-            name: data.name || entry.name,
-            property_type: data.property_type || entry.property_type,
-            purchase_price: data.purchase_price || entry.purchase_price,
-            current_value: data.current_value || entry.current_value,
-            monthly_rent: data.monthly_rent || entry.monthly_rent,
-            address: data.address || entry.address,
-            addressCity: data.addressCity || entry.addressCity,
-            addressProvince: data.addressProvince || entry.addressProvince,
-            description: data.description || entry.description,
-            image_url: data.image_url || entry.image_url,
-            location: data.location || entry.location,
-            userId: data.userId || null,
-          }
+    const enrichedRecommendations = await Promise.all(
+      recommendationData.recommendations.map(async (rec) => {
+        const recId = rec.propertyId || rec.id
+        let entry = {
+          id: recId,
+          score: rec.score,
+          matchPercentage: Math.round((rec.score || 0) * 100),
+          name: rec.name || 'Property',
+          property_type: rec.property_type || null,
+          purchase_price: rec.purchase_price || rec.price || null,
+          current_value: rec.current_value || rec.price || null,
+          monthly_rent: rec.monthly_rent || null,
+          address: rec.address || rec.location || null,
+          addressCity: rec.addressCity || rec.city || null,
+          addressProvince: rec.addressProvince || null,
+          description: rec.description || null,
+          image_url: rec.image_url || null,
+          location: rec.location || null,
+          bedrooms: rec.bedrooms || null,
+          baths: rec.baths || null,
+          area: rec.area || null,
+          area_type: rec.area_type || null,
+          purpose: rec.purpose || null,
         }
-      } catch (fetchError) {
-        console.warn(`⚠️ Could not fetch property ${recId} from Firestore:`, fetchError.message)
-      }
 
-      enrichedRecommendations.push(entry)
-    }
+        try {
+          const doc = await db.collection(PROPERTIES_COLLECTION).doc(recId).get()
+          if (doc.exists) {
+            const data = doc.data()
+            entry = {
+              ...entry,
+              name: data.name || entry.name,
+              property_type: data.property_type || entry.property_type,
+              purchase_price: data.purchase_price || entry.purchase_price,
+              current_value: data.current_value || entry.current_value,
+              monthly_rent: data.monthly_rent || entry.monthly_rent,
+              address: data.address || entry.address,
+              addressCity: data.addressCity || entry.addressCity,
+              addressProvince: data.addressProvince || entry.addressProvince,
+              description: data.description || entry.description,
+              image_url: data.image_url || entry.image_url,
+              location: data.location || entry.location,
+              userId: data.userId || null,
+            }
+          }
+        } catch (fetchError) {
+          console.warn(`⚠️ Could not fetch property ${recId} from Firestore:`, fetchError.message)
+        }
+
+        return entry
+      })
+    )
 
     console.log(`✅ Returning ${enrichedRecommendations.length} recommendations for property ${propertyId}`)
 

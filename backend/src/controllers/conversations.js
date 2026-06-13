@@ -43,18 +43,13 @@ export async function getAllConversations(req, res) {
         const userId = req.user.uid
         console.log('Fetching conversations for user UID from token:', userId)
 
-        console.log('Fetching all conversations for diag...')
-        const allSnapshot = await db.collection(CONVERSATIONS_COLLECTION).get()
-        console.log('Total conversations in system:', allSnapshot.size)
+        const snapshot = await db.collection(CONVERSATIONS_COLLECTION).where('userId', '==', userId).get()
 
         const conversations = []
-        allSnapshot.forEach(doc => {
-            const data = doc.data()
-            if (data.userId === userId) {
-                conversations.push({ id: doc.id, ...data })
-            }
+        snapshot.forEach(doc => {
+            conversations.push({ id: doc.id, ...doc.data() })
         })
-        console.log(`Filtered down to ${conversations.length} for user ${userId}`)
+        console.log(`Found ${conversations.length} conversations for user ${userId}`)
 
         res.json({ success: true, conversations, searchingForUID: userId })
     } catch (error) {

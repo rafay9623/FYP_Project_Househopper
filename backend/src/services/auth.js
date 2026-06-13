@@ -8,6 +8,49 @@ const USERS_COLLECTION = 'users'
  */
 
 /**
+ * Ensures a user profile exists in Firestore. 
+ * Creates a new profile or merges updates into an existing one.
+ */
+export async function ensureFirestoreProfile(uid, overrides = {}) {
+  const db = getFirestore()
+  const auth = getAuth()
+  
+  const userRecord = await auth.getUser(uid)
+  const ref = db.collection(USERS_COLLECTION).doc(uid)
+  const existing = await ref.get()
+
+  const authFirstName = userRecord.displayName?.split(' ')[0] || ''
+  const authLastName = userRecord.displayName?.split(' ').slice(1).join(' ') || ''
+
+  const profile = createUserObject({
+    uid: userRecord.uid,
+    email: userRecord.email,
+    displayName: userRecord.displayName || `${overrides.firstName || authFirstName} ${overrides.lastName || authLastName}`.trim(),
+    firstName: overrides.firstName || authFirstName,
+    lastName: overrides.lastName || authLastName,
+    isActive: userRecord.emailVerified,
+    ...overrides,
+  })
+
+  if (existing.exists) {
+    profile.createdAt = existing.data().createdAt
+    profile.lastLoginAt = new Date().toISOString()
+    const dataToMerge = {
+      ...existing.data(),
+      ...profile,
+      updatedAt: new Date().toISOString()
+    }
+    await ref.set(dataToMerge, { merge: true })
+    return (await ref.get()).data()
+  } else {
+    profile.createdAt = new Date().toISOString()
+    profile.lastLoginAt = profile.createdAt
+    await ref.set(profile)
+    return profile
+  }
+}
+
+/**
  * Create a new user with Firebase Auth and store in Firestore
  * NOTE: This is for admin/server-side user creation
  */
@@ -332,6 +375,7 @@ export async function updateUserProfileAfterVerification(uid) {
 }
 
 export default {
+  ensureFirestoreProfile,
   createUser,
   createUserFromToken,
   getUserById,
