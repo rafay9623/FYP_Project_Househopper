@@ -33,12 +33,19 @@ async function fetchWithAuth(url, options = {}) {
 
   console.log(`🌐 API Request: ${options.method || 'GET'} ${fullUrl}`)
 
+  const fetchOptions = {
+    ...options,
+    credentials: 'include',
+    headers,
+  }
+
+  // Disable caching for GET requests to ensure we always get latest state (plan, profile etc)
+  if (!options.method || options.method.toUpperCase() === 'GET') {
+    fetchOptions.cache = 'no-store'
+  }
+
   try {
-    const response = await fetch(fullUrl, {
-      ...options,
-      credentials: 'include',
-      headers,
-    })
+    const response = await fetch(fullUrl, fetchOptions)
 
     console.log(`📡 Response status: ${response.status} ${response.statusText}`)
 
@@ -150,6 +157,7 @@ export const authApi = {
         'Authorization': `Bearer ${idToken}`
       },
       credentials: 'include',
+      cache: 'no-store', // Always get latest profile
     })
     if (!response.ok) {
       const error = await response.json()
@@ -169,10 +177,31 @@ export const authApi = {
 
 // Properties API
 export const propertiesApi = {
-  getAll: async (fields = null) => {
-    const url = fields ? `/api/properties?fields=${fields}` : '/api/properties'
+  getAll: async (params = {}) => {
+    // Construct query string from params object
+    const query = new URLSearchParams()
+    for (const [key, value] of Object.entries(params)) {
+      if (value !== undefined && value !== null && value !== '') {
+        query.append(key, value)
+      }
+    }
+    
+    const queryString = query.toString()
+    const url = queryString ? `/api/properties?${queryString}` : '/api/properties'
     const response = await fetchWithAuth(url)
     // Handle both response formats: { properties: [] } or []
+    return response.properties || response
+  },
+  getPublic: async (params = {}) => {
+    const query = new URLSearchParams()
+    for (const [key, value] of Object.entries(params)) {
+      if (value !== undefined && value !== null && value !== '') {
+        query.append(key, value)
+      }
+    }
+    const queryString = query.toString()
+    const url = queryString ? `/api/properties/public-browse?${queryString}` : '/api/properties/public-browse'
+    const response = await fetchWithAuth(url)
     return response.properties || response
   },
   getStats: async () => {

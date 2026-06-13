@@ -19,6 +19,7 @@ const AddProperty = lazy(() => import('./pages/AddProperty'))
 const Portfolio = lazy(() => import('./pages/Portfolio'))
 const ROICalculator = lazy(() => import('./pages/ROICalculator'))
 const BrowseUsers = lazy(() => import('./pages/BrowseUsers'))
+const BrowseProperties = lazy(() => import('./pages/BrowseProperties'))
 const UserProperties = lazy(() => import('./pages/UserProperties'))
 const ChatPage = lazy(() => import('./pages/ChatPage'))
 const HeatMapPage = lazy(() => import('./pages/HeatMapPage'))
@@ -108,6 +109,14 @@ function App() {
                   element={
                     <ProtectedRoute>
                       <BrowseUsers />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/browse-properties"
+                  element={
+                    <ProtectedRoute>
+                      <BrowseProperties />
                     </ProtectedRoute>
                   }
                 />

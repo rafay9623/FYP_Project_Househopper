@@ -20,6 +20,7 @@ router.get('/admin/all', verifyAdmin, propertiesController.getAdminAllProperties
 // Authenticated routes
 router.get('/stats', verifyToken, propertiesController.getPropertyStats)
 router.get('/', verifyToken, propertiesController.getAllProperties)
+router.get('/public-browse', verifyToken, propertiesController.getPublicProperties)
 
 router.get('/user/:userId', verifyToken, propertiesController.getPropertiesByUserId)
 router.get('/:id', verifyToken, propertiesController.getPropertyById)

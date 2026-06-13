@@ -108,16 +108,18 @@ export default function ChatPage() {
         }
     }
 
-    const handleSend = async (e) => {
-        e.preventDefault()
-        if (!input.trim() || loading) return
+    const handleSend = async (e, retryMessage = null) => {
+        if (e) e.preventDefault()
+        const userMessage = retryMessage || input.trim()
+        if (!userMessage || loading) return
 
-        const userMessage = input.trim()
-        setInput('')
+        if (!retryMessage) setInput('')
 
-        // Optimistic update for UI
+        // Optimistic update
         const tempId = Date.now().toString()
-        setMessages(prev => [...prev, { id: tempId, role: 'user', text: userMessage, createdAt: new Date().toISOString() }])
+        if (!retryMessage) {
+            setMessages(prev => [...prev, { id: tempId, role: 'user', text: userMessage, createdAt: new Date().toISOString() }])
+        }
         setLoading(true)
 
         try {
@@ -131,12 +133,17 @@ export default function ChatPage() {
                 body: JSON.stringify({
                     message: userMessage,
                     conversationId: activeConversationId,
-                    history: messages.map(m => ({ role: m.role, text: m.text }))
+                    history: messages
+                        .filter(m => !m.isError)
+                        .map(m => ({ role: m.role, text: m.text }))
                 })
             })
 
             const data = await response.json()
-            if (data.error) throw new Error(data.error)
+            
+            if (!response.ok) {
+                throw new Error(data.error || 'Failed to get response')
+            }
 
             // If it was a new conversation, update active ID and refresh list
             if (!activeConversationId && data.conversationId) {
@@ -145,17 +152,27 @@ export default function ChatPage() {
             }
 
             setMessages(prev => {
-                // Remove the optimistic message and add the real ones (or just add model response)
-                const filtered = prev.filter(m => m.id !== tempId)
+                const filtered = prev.filter(m => m.id !== tempId && !m.isError)
                 return [...filtered,
-                { role: 'user', text: userMessage },
-                { role: 'model', text: data.response, properties: data.properties }
+                    { role: 'user', text: userMessage },
+                    { role: 'model', text: data.response, properties: data.properties }
                 ]
             })
 
         } catch (error) {
             console.error('Chat error:', error)
-            setMessages(prev => [...prev, { role: 'model', text: 'Sorry, I failed to respond. Please try again.', isError: true }])
+            setMessages(prev => {
+                const filtered = prev.filter(m => m.id !== tempId)
+                return [...filtered, 
+                    { role: 'user', text: userMessage },
+                    { 
+                        role: 'model', 
+                        text: error.message || 'Sorry, I failed to respond. Please try again.', 
+                        isError: true,
+                        retryMsg: userMessage 
+                    }
+                ]
+            })
         } finally {
             setLoading(false)
         }
@@ -286,6 +303,18 @@ export default function ChatPage() {
                                         msg.isError && "bg-destructive/10 text-destructive border border-destructive/20"
                                     )}>
                                         <div className="whitespace-pre-wrap">{msg.text}</div>
+
+                                        {msg.isError && msg.retryMsg && (
+                                            <Button 
+                                                variant="outline" 
+                                                size="sm" 
+                                                onClick={() => handleSend(null, msg.retryMsg)}
+                                                className="mt-3 gap-2 border-destructive/20 hover:bg-destructive/10 text-destructive rounded-xl h-8 px-3"
+                                            >
+                                                <Sparkles className="h-3.5 w-3.5" />
+                                                Try Again
+                                            </Button>
+                                        )}
 
                                         {msg.properties && msg.properties.length > 0 && (
                                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-4">

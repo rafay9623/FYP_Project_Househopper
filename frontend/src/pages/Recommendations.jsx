@@ -70,8 +70,8 @@ export default function Recommendations() {
               </h1>
             </div>
             <p className="text-lg text-foreground/70 max-w-2xl mx-auto">
-              Our AI analyzes property descriptions, types, locations, and price ranges
-              using a Hugging Face language model to find the most similar properties for you.
+              Our AI analyzes property descriptions, types, locations,
+              and price ranges to find the most similar properties for you.
             </p>
           </div>
 

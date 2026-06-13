@@ -42,14 +42,18 @@ export default function AddProperty() {
     image: null,
   })
 
-  const validateForm = () => {
+  const validateForm = (isSubmitting = false) => {
     const newErrors = {}
+    const alphaNumericRegex = /^(?!\d+$)[a-zA-Z0-9\s.,'-]+$/
+    const postalCodeRegex = /^\d{5}$/
 
     // Required field validations
     if (!formData.name.trim()) {
       newErrors.name = 'Property name is required'
     } else if (formData.name.trim().length < 3) {
       newErrors.name = 'Property name must be at least 3 characters'
+    } else if (!alphaNumericRegex.test(formData.name.trim())) {
+      newErrors.name = 'Property name cannot consist only of numbers'
     }
 
     if (!formData.addressStreet.trim()) {
@@ -60,10 +64,20 @@ export default function AddProperty() {
 
     if (!formData.addressCity.trim()) {
       newErrors.addressCity = 'City is required'
+    } else if (!alphaNumericRegex.test(formData.addressCity.trim())) {
+      newErrors.addressCity = 'City name cannot consist only of numbers'
     }
 
     if (!formData.addressProvince.trim()) {
       newErrors.addressProvince = 'Province is required'
+    }
+
+    if (formData.addressPostalCode && formData.addressPostalCode.trim() && !postalCodeRegex.test(formData.addressPostalCode.trim())) {
+      newErrors.addressPostalCode = 'Postal code must be exactly 5 digits for Pakistan'
+    }
+
+    if (formData.property_type && formData.property_type.trim() && !alphaNumericRegex.test(formData.property_type.trim())) {
+      newErrors.property_type = 'Property type cannot consist only of numbers'
     }
 
     // Numeric validations
@@ -72,7 +86,7 @@ export default function AddProperty() {
       if (isNaN(price) || price <= 0) {
         newErrors.purchase_price = 'Purchase price must be a positive number'
       }
-    } else {
+    } else if (isSubmitting) {
       newErrors.purchase_price = 'Purchase price is required'
     }
 
@@ -100,8 +114,8 @@ export default function AddProperty() {
       }
     }
 
-    // Image validation
-    if (formData.image) {
+    // Image validation (Submitting only)
+    if (isSubmitting && formData.image) {
       const maxSize = 5 * 1024 * 1024 // 5MB
       if (formData.image.size > maxSize) {
         newErrors.image = 'Image size must be less than 5MB'
@@ -158,11 +172,48 @@ export default function AddProperty() {
   }
 
   const handleInputChange = (field, value) => {
-    setFormData({ ...formData, [field]: value })
-    // Clear error for this field when user starts typing
-    if (errors[field]) {
-      setErrors({ ...errors, [field]: null })
+    let finalValue = value
+
+    // 1. Physical Filtering for numeric inputs
+    if (field === 'addressPostalCode') {
+      finalValue = value.replace(/\D/g, '').slice(0, 5) // Only digits, max 5
     }
+
+    setFormData((prev) => {
+      const updated = { ...prev, [field]: finalValue }
+      
+      // 2. Real-time validation for specific fields
+      const alphaNumericRegex = /^(?!\d+$)[a-zA-Z0-9\s.,'-]+$/
+      const postalCodeRegex = /^\d{5}$/
+      const newErrors = { ...errors }
+
+      // Name/City/Town/Type: Must have letters and be at least 2 chars
+      if (['name', 'addressCity', 'addressTown', 'property_type'].includes(field)) {
+        if (finalValue && finalValue.trim()) {
+          if (!alphaNumericRegex.test(finalValue)) {
+            newErrors[field] = 'Must contain letters and cannot be only numbers'
+          } else if (finalValue.trim().length < 2) {
+            newErrors[field] = 'Too short (min 2 characters)'
+          } else {
+            delete newErrors[field]
+          }
+        } else {
+          // If required field is cleared, show "Required" error if we want, or just clear error
+          delete newErrors[field]
+        }
+      }
+
+      if (field === 'addressPostalCode') {
+        if (finalValue && finalValue.trim() && !postalCodeRegex.test(finalValue)) {
+          newErrors[field] = 'Postal code must be exactly 5 digits'
+        } else {
+          delete newErrors[field]
+        }
+      }
+
+      setErrors(newErrors)
+      return updated
+    })
   }
 
   const handleGetLocation = () => {
@@ -225,7 +276,7 @@ export default function AddProperty() {
     }
 
     // Validate form
-    if (!validateForm()) {
+    if (!validateForm(true)) {
       toast({
         title: 'Validation Error',
         description: 'Please fix the errors in the form before submitting.',
@@ -601,7 +652,14 @@ export default function AddProperty() {
                         value={formData.addressTown}
                         onChange={(e) => handleInputChange('addressTown', e.target.value)}
                         placeholder="e.g. Gulberg III"
+                        className={errors.addressTown ? 'border-destructive' : ''}
                       />
+                      {errors.addressTown && (
+                        <p className="text-sm text-destructive flex items-center gap-1 mt-1">
+                          <AlertCircle className="h-3 w-3" />
+                          {errors.addressTown}
+                        </p>
+                      )}
                     </div>
 
                     {/* City */}
@@ -652,7 +710,14 @@ export default function AddProperty() {
                         value={formData.addressPostalCode}
                         onChange={(e) => handleInputChange('addressPostalCode', e.target.value)}
                         placeholder="e.g. 54000"
+                        className={errors.addressPostalCode ? 'border-destructive' : ''}
                       />
+                      {errors.addressPostalCode && (
+                        <p className="text-sm text-destructive flex items-center gap-1 mt-1">
+                          <AlertCircle className="h-3 w-3" />
+                          {errors.addressPostalCode}
+                        </p>
+                      )}
                     </div>
 
                     {/* Country - Read Only */}
@@ -676,7 +741,14 @@ export default function AddProperty() {
                     value={formData.property_type}
                     onChange={(e) => handleInputChange('property_type', e.target.value)}
                     placeholder="e.g., Apartment, House, Condo"
+                    className={errors.property_type ? 'border-destructive' : ''}
                   />
+                  {errors.property_type && (
+                    <p className="text-sm text-destructive flex items-center gap-1 mt-1">
+                      <AlertCircle className="h-3 w-3" />
+                      {errors.property_type}
+                    </p>
+                  )}
                 </div>
 
                 {/* Purchase Price */}

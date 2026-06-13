@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
+import { useAuth } from '@/contexts/AuthContext'
 import { useSubscription } from '@/contexts/SubscriptionContext'
 import { subscriptionApi } from '@/services/api.service'
 import { CheckCircle, ArrowRight, Sparkles, Loader2, AlertCircle } from 'lucide-react'
@@ -9,6 +10,7 @@ export default function SubscriptionSuccess() {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const { refreshPlan } = useSubscription()
+  const { refreshProfile } = useAuth()
   const [status, setStatus] = useState('verifying') // 'verifying' | 'success' | 'error'
   const [errorMsg, setErrorMsg] = useState('')
 
@@ -25,8 +27,11 @@ export default function SubscriptionSuccess() {
       try {
         const data = await subscriptionApi.verifySession(sessionId)
         if (data.success) {
-          // Plan updated in Firestore — now refresh the context so the UI reflects it
-          await refreshPlan()
+          // Plan updated in Firestore — now refresh both context and profile to sync UI
+          await Promise.all([
+            refreshPlan(),
+            refreshProfile()
+          ])
           setStatus('success')
         } else {
           throw new Error(data.error || 'Verification failed')

@@ -4,7 +4,7 @@ import { useTheme } from 'next-themes'
 import { useAuth } from '@/contexts/AuthContext'
 import { Button } from '@/components/ui/button'
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet'
-import { Menu, ArrowLeft, Plus, Users, LogOut, User, LayoutDashboard, Building2, Calculator, Sun, Moon, Bot, Map, Sparkles } from 'lucide-react'
+import { Menu, ArrowLeft, Plus, Users, LogOut, User, LayoutDashboard, Building2, Calculator, Sun, Moon, Bot, Map, Sparkles, Search } from 'lucide-react'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -142,6 +142,14 @@ export default function Navbar({ variant = 'default', showBackButton = false, ba
             <div className="hidden md:flex items-center gap-2">
               <Button
                 variant="ghost"
+                onClick={() => navigate('/browse-properties')}
+                className="text-sm rounded-xl hover:bg-primary/10 text-primary"
+              >
+                <Search className="h-4 w-4 mr-2" />
+                Browse Properties
+              </Button>
+              <Button
+                variant="ghost"
                 onClick={() => navigate('/dashboard')}
                 className="text-sm rounded-xl hover:bg-primary/10"
               >
@@ -208,6 +216,14 @@ export default function Navbar({ variant = 'default', showBackButton = false, ba
                     </div>
                     <span className="font-bold text-lg gradient-text-primary">HouseHoppers</span>
                   </div>
+                  <Button
+                    variant="ghost"
+                    onClick={() => handleNavigate('/browse-properties')}
+                    className="justify-start w-full rounded-xl text-primary"
+                  >
+                    <Search className="h-4 w-4 mr-3" />
+                    Browse Properties
+                  </Button>
                   <Button
                     variant="ghost"
                     onClick={() => handleNavigate('/dashboard')}
@@ -321,6 +337,14 @@ export default function Navbar({ variant = 'default', showBackButton = false, ba
 
             {/* Desktop Navigation */}
             <div className="hidden md:flex items-center gap-3">
+              <Button
+                variant="ghost"
+                onClick={() => navigate('/browse-properties')}
+                className="text-sm rounded-xl hover:bg-primary/10 text-primary px-4"
+              >
+                <Search className="h-4 w-4 mr-2" />
+                Browse Properties
+              </Button>
               <Button
                 variant="outline"
                 onClick={() => navigate('/browse-users')}
