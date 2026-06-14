@@ -346,8 +346,10 @@ export default function ChatPage() {
                             ))}
                             {loading && (
                                 <div className="flex justify-start">
-                                    <div className="bg-muted/30 rounded-3xl rounded-tl-none p-4 ring-1 ring-white/5">
-                                        <Loader2 className="h-5 w-5 animate-spin text-secondary" />
+                                    <div className="bg-muted/30 rounded-3xl rounded-tl-none px-6 py-4 ring-1 ring-white/5 flex items-center gap-1.5">
+                                        <span className="w-2.5 h-2.5 bg-secondary/70 rounded-full animate-bounce" style={{ animationDelay: '0ms', animationDuration: '1.2s' }} />
+                                        <span className="w-2.5 h-2.5 bg-secondary/70 rounded-full animate-bounce" style={{ animationDelay: '200ms', animationDuration: '1.2s' }} />
+                                        <span className="w-2.5 h-2.5 bg-secondary/70 rounded-full animate-bounce" style={{ animationDelay: '400ms', animationDuration: '1.2s' }} />
                                     </div>
                                 </div>
                             )}
