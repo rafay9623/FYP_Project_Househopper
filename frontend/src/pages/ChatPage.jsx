@@ -302,7 +302,16 @@ export default function ChatPage() {
                                             : "bg-muted/30 text-foreground rounded-tl-none backdrop-blur-md",
                                         msg.isError && "bg-destructive/10 text-destructive border border-destructive/20"
                                     )}>
-                                        <div className="whitespace-pre-wrap">{msg.text}</div>
+                                        <div className="whitespace-pre-wrap">{(() => {
+                                            // Guard against raw JSON being displayed as text
+                                            if (msg.role === 'model' && msg.text && msg.text.trim().startsWith('{')) {
+                                                try {
+                                                    const parsed = JSON.parse(msg.text)
+                                                    return parsed.response || parsed.answer || parsed.text || msg.text
+                                                } catch { /* not JSON, just display it */ }
+                                            }
+                                            return msg.text
+                                        })()}</div>
 
                                         {msg.isError && msg.retryMsg && (
                                             <Button 

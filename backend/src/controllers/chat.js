@@ -149,16 +149,18 @@ export async function handleMessage(req, res) {
         // 6. Robust JSON Extraction
         let jsonResponse
         try {
-            const jsonMatch = text.match(/\{[\s\S]*\}/)
-            const cleanedText = jsonMatch ? jsonMatch[0] : text
-            const parsed = JSON.parse(cleanedText)
+            // Strip markdown code fences if present (```json ... ```)
+            let cleaned = text.replace(/```(?:json)?\s*/gi, '').replace(/```\s*$/gi, '').trim()
+            const jsonMatch = cleaned.match(/\{[\s\S]*\}/)
+            const jsonStr = jsonMatch ? jsonMatch[0] : cleaned
+            const parsed = JSON.parse(jsonStr)
             
             jsonResponse = {
-                response: parsed.response || parsed.answer || parsed.text || "I couldn't format the response correctly, but here is what I found: " + text,
+                response: parsed.response || parsed.answer || parsed.text || text,
                 properties: Array.isArray(parsed.properties) ? parsed.properties : []
             }
         } catch (e) {
-            console.warn('JSON Parse semi-failed, using raw text')
+            console.warn('JSON Parse failed, using raw text as response')
             jsonResponse = { response: text, properties: [] }
         }
 
