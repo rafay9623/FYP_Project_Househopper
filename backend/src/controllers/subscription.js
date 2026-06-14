@@ -41,7 +41,11 @@ export async function getUserPlan(req, res) {
       return res.status(401).json({ success: false, error: 'Authentication required' })
     }
 
-    const userDoc = await db.collection(USERS_COLLECTION).doc(userId).get()
+    // Fetch user document and chat usage in parallel
+    const [userDoc, usageDoc] = await Promise.all([
+      db.collection(USERS_COLLECTION).doc(userId).get(),
+      db.collection(CHAT_USAGE_COLLECTION).doc(userId).get(),
+    ])
 
     if (!userDoc.exists) {
       return res.json({
@@ -55,10 +59,9 @@ export async function getUserPlan(req, res) {
     const userData = userDoc.data()
     const plan = userData.subscriptionPlan || 'basic'
 
-    // Check chatbot usage for basic users
+    // Calculate chatbot usage for basic users
     let chatUsage = null
     if (plan === 'basic') {
-      const usageDoc = await db.collection(CHAT_USAGE_COLLECTION).doc(userId).get()
       if (usageDoc.exists) {
         const usage = usageDoc.data()
         const windowStart = new Date(usage.windowStart)
@@ -85,12 +88,11 @@ export async function getUserPlan(req, res) {
       planDetails: PLANS[plan] || PLANS.basic,
       subscriptionStatus: userData.subscriptionStatus || null,
       subscriptionExpiresAt: userData.subscriptionExpiresAt || null,
-      stripeCustomerId: userData.stripeCustomerId || null,
       chatUsage,
     })
   } catch (error) {
     console.error('Error getting user plan:', error)
-    res.status(500).json({ success: false, error: error.message })
+    res.status(500).json({ success: false, error: 'Failed to retrieve subscription plan' })
   }
 }
 
@@ -157,7 +159,7 @@ export async function createCheckoutSession(req, res) {
     res.json({ success: true, url: session.url, sessionId: session.id })
   } catch (error) {
     console.error('Error creating checkout session:', error)
-    res.status(500).json({ success: false, error: error.message })
+    res.status(500).json({ success: false, error: 'Failed to create checkout session. Please try again.' })
   }
 }
 
@@ -225,7 +227,7 @@ export async function verifySession(req, res) {
     })
   } catch (error) {
     console.error('Error verifying session:', error)
-    res.status(500).json({ success: false, error: error.message })
+    res.status(500).json({ success: false, error: 'Failed to verify payment. Please try again or contact support.' })
   }
 }
 
@@ -257,7 +259,7 @@ export async function createCustomerPortalSession(req, res) {
     res.json({ success: true, url: session.url })
   } catch (error) {
     console.error('Error creating portal session:', error)
-    res.status(500).json({ success: false, error: error.message })
+    res.status(500).json({ success: false, error: 'Failed to open billing portal. Please try again.' })
   }
 }
 
