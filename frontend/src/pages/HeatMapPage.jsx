@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
-import { GoogleMap, useJsApiLoader, HeatmapLayer, InfoWindow, Marker } from '@react-google-maps/api'
+import { GoogleMapF, useJsApiLoader, HeatmapLayerF, InfoWindowF, MarkerF } from '@react-google-maps/api'
 import { AlertCircle, Loader2, Map as MapIcon, Info } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Alert, AlertDescription } from '@/components/ui/alert'
@@ -150,7 +150,7 @@ export default function HeatMapPage() {
                                 <p className="text-muted-foreground">Loading Map...</p>
                             </div>
                         ) : (
-                            <GoogleMap
+                            <GoogleMapF
                                 mapContainerStyle={mapContainerStyle}
                                 center={DEFAULT_CENTER}
                                 zoom={DEFAULT_ZOOM}
@@ -170,7 +170,7 @@ export default function HeatMapPage() {
                             >
                                 {/* Heatmap Layer */}
                                 {showHeatmap && heatmapData.length > 0 && (
-                                    <HeatmapLayer
+                                    <HeatmapLayerF
                                         data={heatmapData}
                                         options={{
                                             radius: 30,
@@ -197,7 +197,7 @@ export default function HeatMapPage() {
 
                                 {/* Individual Markers (visible when heatmap is off or optionally) */}
                                 {!showHeatmap && markers.map((marker) => (
-                                    <Marker
+                                    <MarkerF
                                         key={marker.id}
                                         position={{
                                             lat: marker.location.latitude,
@@ -209,7 +209,7 @@ export default function HeatMapPage() {
 
                                 {/* Info Window for Selected Property */}
                                 {selectedProperty && (
-                                    <InfoWindow
+                                    <InfoWindowF
                                         position={{
                                             lat: selectedProperty.location.latitude,
                                             lng: selectedProperty.location.longitude
@@ -223,9 +223,9 @@ export default function HeatMapPage() {
                                                 {selectedProperty.propertyType && <p className="capitalize">{selectedProperty.propertyType}</p>}
                                             </div>
                                         </div>
-                                    </InfoWindow>
+                                    </InfoWindowF>
                                 )}
-                            </GoogleMap>
+                            </GoogleMapF>
                         )}
 
                         {/* Stats Overlay */}
