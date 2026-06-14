@@ -302,15 +302,26 @@ export default function ChatPage() {
                                             : "bg-muted/30 text-foreground rounded-tl-none backdrop-blur-md",
                                         msg.isError && "bg-destructive/10 text-destructive border border-destructive/20"
                                     )}>
-                                        <div className="whitespace-pre-wrap">{(() => {
-                                            // Guard against raw JSON being displayed as text
-                                            if (msg.role === 'model' && msg.text && msg.text.trim().startsWith('{')) {
+                                        <div className="chat-markdown">{(() => {
+                                            let text = msg.text || ''
+                                            // Guard against raw JSON being displayed
+                                            if (msg.role === 'model' && text.trim().startsWith('{')) {
                                                 try {
-                                                    const parsed = JSON.parse(msg.text)
-                                                    return parsed.response || parsed.answer || parsed.text || msg.text
-                                                } catch { /* not JSON, just display it */ }
+                                                    const parsed = JSON.parse(text)
+                                                    text = parsed.response || parsed.answer || parsed.text || text
+                                                } catch { /* not JSON */ }
                                             }
-                                            return msg.text
+                                            if (msg.role === 'user') return text
+
+                                            // Render markdown for AI messages
+                                            const html = text
+                                                .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+                                                .replace(/\*(.+?)\*/g, '<em>$1</em>')
+                                                .replace(/^[\s]*[-•]\s+(.+)$/gm, '<li>$1</li>')
+                                                .replace(/(<li>.*<\/li>)/s, '<ul class="list-disc pl-5 my-2 space-y-1">$1</ul>')
+                                                .replace(/\n{2,}/g, '<br/><br/>')
+                                                .replace(/\n/g, '<br/>')
+                                            return <span dangerouslySetInnerHTML={{ __html: html }} />
                                         })()}</div>
 
                                         {msg.isError && msg.retryMsg && (
