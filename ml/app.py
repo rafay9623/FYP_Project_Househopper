@@ -176,6 +176,7 @@ def recommend(req: RecommendRequest):
             pass
 
     if mask.sum() == 0:
+        print(f"ℹ️  [ML Fallback] Property '{pid}' not found in the ML embeddings dataset. Returning 404 to trigger Node.js Firestore fallback.")
         raise HTTPException(status_code=404, detail=f"Property '{pid}' not found in the dataset.")
 
     idx = mask.values.nonzero()[0][0]

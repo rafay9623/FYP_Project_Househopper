@@ -91,17 +91,18 @@ export async function getRecommendations(req, res) {
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}))
-      console.error('❌ Recommendation service error:', errorData)
 
       // Fallback path:
       // The selected property may exist in Firestore but not in the ML dataset
       // used by the Python service. In that case, build recommendations from
       // Firestore directly so the UI remains usable.
       if (response.status === 404 && errorData?.detail?.includes('not found in the dataset')) {
+        console.log(`ℹ️ Property '${propertyId}' not found in ML dataset. Falling back to Firestore similarity matching...`)
         const db = getFirestore()
         const targetDoc = await db.collection(PROPERTIES_COLLECTION).doc(propertyId).get()
 
         if (!targetDoc.exists) {
+          console.error(`❌ Fallback failed: Property '${propertyId}' not found in Firestore.`)
           return res.status(404).json({
             success: false,
             error: `Property '${propertyId}' not found in Firestore.`,
@@ -166,6 +167,7 @@ export async function getRecommendations(req, res) {
         return res.json(fallbackPayload)
       }
 
+      console.error('❌ Recommendation service error:', errorData)
       return res.status(response.status).json({
         success: false,
         error: errorData.detail || 'Recommendation service unavailable'
