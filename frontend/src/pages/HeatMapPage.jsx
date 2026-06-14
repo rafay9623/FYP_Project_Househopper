@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { GoogleMapF, useJsApiLoader, HeatmapLayerF, InfoWindowF, MarkerF } from '@react-google-maps/api'
 import { AlertCircle, Loader2, Map as MapIcon, Info } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
@@ -24,7 +24,7 @@ const mapContainerStyle = {
 const libraries = ['visualization']
 
 export default function HeatMapPage() {
-    const [map, setMap] = useState(null)
+    const mapRef = useRef(null)
     const [heatmapData, setHeatmapData] = useState([])
     const [markers, setMarkers] = useState([])
     const [loading, setLoading] = useState(true)
@@ -86,11 +86,11 @@ export default function HeatMapPage() {
     }, [isLoaded, markers])
 
     const onLoad = useCallback(function callback(map) {
-        setMap(map)
+        mapRef.current = map
     }, [])
 
     const onUnmount = useCallback(function callback(map) {
-        setMap(null)
+        mapRef.current = null
     }, [])
 
     if (loadError) {
