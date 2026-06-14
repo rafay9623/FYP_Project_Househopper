@@ -68,18 +68,25 @@ export default function SignInPage() {
       }
     } catch (err) {
       console.error('Sign in error:', err)
-      let errorMessage = err.message || 'Failed to sign in. Please check your credentials.'
+      let errorMessage = 'Invalid email or password. Please try again.'
 
       if (err.code === 'auth/user-not-found') {
         errorMessage = 'No account found with this email. Please sign up first.'
       } else if (err.code === 'auth/wrong-password') {
         errorMessage = 'Incorrect password. Please try again.'
+      } else if (err.code === 'auth/invalid-credential') {
+        errorMessage = 'Invalid email or password. Please check your credentials and try again.'
       } else if (err.code === 'auth/invalid-email') {
-        errorMessage = 'Invalid email address format.'
+        errorMessage = 'The email address you entered is not valid.'
+      } else if (err.code === 'auth/user-disabled') {
+        errorMessage = 'This account has been disabled. Please contact support.'
+      } else if (err.code === 'auth/too-many-requests') {
+        errorMessage = 'Too many failed attempts. Please wait a few minutes and try again.'
+      } else if (err.code === 'auth/network-request-failed') {
+        errorMessage = 'Network error. Please check your internet connection and try again.'
       } else if (err.code === 'auth/configuration-not-found') {
-        errorMessage = 'Firebase Authentication is not configured. Please enable Email/Password in Firebase Console.'
+        errorMessage = 'Authentication is not configured. Please contact support.'
       } else if (err.message && err.message.includes('verify your email')) {
-        // Custom error from AuthContext
         errorMessage = err.message
         setTimeout(() => {
           navigate('/auth/verify-email')

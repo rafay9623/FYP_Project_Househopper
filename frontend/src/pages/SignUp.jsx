@@ -185,16 +185,20 @@ export default function SignUpPage() {
       }, 1500)
     } catch (err) {
       console.error('Sign up error:', err)
-      let errorMessage = err.message || 'Failed to create account. Please try again.'
-      
+      let errorMessage = 'Failed to create account. Please try again.'
+
       if (err.code === 'auth/email-already-in-use') {
         errorMessage = 'This email is already registered. Please sign in instead.'
       } else if (err.code === 'auth/invalid-email') {
-        errorMessage = 'Invalid email address format.'
+        errorMessage = 'The email address you entered is not valid.'
       } else if (err.code === 'auth/weak-password') {
         errorMessage = 'Password is too weak. Please use a stronger password.'
+      } else if (err.code === 'auth/too-many-requests') {
+        errorMessage = 'Too many attempts. Please wait a few minutes and try again.'
+      } else if (err.code === 'auth/network-request-failed') {
+        errorMessage = 'Network error. Please check your internet connection and try again.'
       } else if (err.code === 'auth/configuration-not-found') {
-        errorMessage = 'Firebase Authentication is not configured. Please enable Email/Password in Firebase Console.'
+        errorMessage = 'Authentication is not configured. Please contact support.'
       }
       
       setError(errorMessage)
