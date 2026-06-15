@@ -287,14 +287,13 @@ export default function SignUpPage() {
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="firstName" className="text-foreground/80">First Name *</Label>
-                    <Input
-                      id="firstName"
+                      <Input
+                        id="firstName"
                         type="text"
                         placeholder="John"
                         value={formData.firstName}
                         onChange={(e) => handleInputChange('firstName', e.target.value)}
                       className="bg-input/50 border-border/50 focus:border-primary/50 rounded-xl h-12"
-                        required
                       />
                     </div>
                     <div className="space-y-2">
@@ -306,7 +305,6 @@ export default function SignUpPage() {
                         value={formData.lastName}
                         onChange={(e) => handleInputChange('lastName', e.target.value)}
                       className="bg-input/50 border-border/50 focus:border-primary/50 rounded-xl h-12"
-                        required
                       />
                     </div>
                   </div>
@@ -325,7 +323,6 @@ export default function SignUpPage() {
                     } ${
                       formData.email && emailValidation.valid ? 'border-primary/50' : ''
                     }`}
-                      required
                     />
                   {formData.email && !emailValidation.valid && (
                     <p className="text-sm text-destructive flex items-center gap-1">
@@ -352,7 +349,6 @@ export default function SignUpPage() {
                         value={formData.password}
                         onChange={(e) => handleInputChange('password', e.target.value)}
                       className="bg-input/50 border-border/50 focus:border-primary/50 rounded-xl h-12 pr-12"
-                        required
                       />
                       <button
                         type="button"
@@ -394,7 +390,6 @@ export default function SignUpPage() {
                       className={`bg-input/50 border-border/50 focus:border-primary/50 rounded-xl h-12 pr-12 ${
                         formData.confirmPassword && !doPasswordsMatch ? 'border-destructive' : ''
                       }`}
-                        required
                       />
                       <button
                         type="button"
