@@ -4,8 +4,9 @@ let PYTHON_SERVICE_URL = process.env.RECOMMENDATION_SERVICE_URL || 'http://local
 if (PYTHON_SERVICE_URL.includes('localhost') && process.env.NODE_ENV === 'production') {
   PYTHON_SERVICE_URL = 'https://rafay9623-househopper-recommendations.hf.space'
 }
-if (!PYTHON_SERVICE_URL.startsWith('http://') && !PYTHON_SERVICE_URL.startsWith('https://')) {
-  PYTHON_SERVICE_URL = 'https://' + PYTHON_SERVICE_URL
+// Clean up malformed protocols (e.g. user pasted 'ttps://' or just 'domain.com')
+if (!PYTHON_SERVICE_URL.startsWith('http')) {
+  PYTHON_SERVICE_URL = 'https://' + PYTHON_SERVICE_URL.replace(/^[a-zA-Z0-9]*:\/\//, '')
 }
 const PROPERTIES_COLLECTION = 'properties'
 
