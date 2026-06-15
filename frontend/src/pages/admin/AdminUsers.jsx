@@ -11,7 +11,7 @@ export default function AdminUsers() {
         let isMounted = true
         async function fetchUsers() {
             try {
-                const data = await usersApi.getAll()
+                const data = await usersApi.adminGetAll()
                 if (isMounted) {
                     setUsers(Array.isArray(data) ? data : [])
                 }
