@@ -4,6 +4,9 @@ let PYTHON_SERVICE_URL = process.env.RECOMMENDATION_SERVICE_URL || 'http://local
 if (PYTHON_SERVICE_URL.includes('localhost') && process.env.NODE_ENV === 'production') {
   PYTHON_SERVICE_URL = 'https://rafay9623-househopper-recommendations.hf.space'
 }
+if (!PYTHON_SERVICE_URL.startsWith('http://') && !PYTHON_SERVICE_URL.startsWith('https://')) {
+  PYTHON_SERVICE_URL = 'https://' + PYTHON_SERVICE_URL
+}
 const PROPERTIES_COLLECTION = 'properties'
 
 // Simple in-memory cache for recommendations (propertyId -> recommendations data)
