@@ -1,6 +1,9 @@
 import { getFirestore } from '../config/firebase_config.js'
 
-const PYTHON_SERVICE_URL = process.env.RECOMMENDATION_SERVICE_URL || 'http://localhost:5001'
+let PYTHON_SERVICE_URL = process.env.RECOMMENDATION_SERVICE_URL || 'http://localhost:5001'
+if (PYTHON_SERVICE_URL.includes('localhost') && process.env.NODE_ENV === 'production') {
+  PYTHON_SERVICE_URL = 'https://rafay9623-househopper-recommendations.hf.space'
+}
 const PROPERTIES_COLLECTION = 'properties'
 
 // Simple in-memory cache for recommendations (propertyId -> recommendations data)
