@@ -425,7 +425,8 @@ export default function SignUpPage() {
 
                 {/* Submit Button */}
                   <Button 
-                    type="submit" 
+                    type="button" 
+                    onClick={handleSubmit}
                   className="w-full btn-gradient rounded-xl h-12 text-lg font-semibold text-background magnetic ripple" 
                     disabled={loading || !isPasswordValid || !doPasswordsMatch}
                   >
