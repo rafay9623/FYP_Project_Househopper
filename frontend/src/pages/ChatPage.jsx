@@ -22,11 +22,13 @@ export default function ChatPage() {
     const scrollRef = useRef(null)
     const inputRef = useRef(null)
 
+    const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001'
+
     // Load conversations list
     const fetchConversations = async () => {
         try {
             const token = await currentUser.getIdToken()
-            const response = await fetch('/api/conversations', {
+            const response = await fetch(`${API_BASE_URL}/api/conversations`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             })
             const data = await response.json()
@@ -46,7 +48,7 @@ export default function ChatPage() {
         setLoading(true)
         try {
             const token = await currentUser.getIdToken()
-            const response = await fetch(`/api/conversations/${id}/messages`, {
+            const response = await fetch(`${API_BASE_URL}/api/conversations/${id}/messages`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             })
             const data = await response.json()
@@ -92,7 +94,7 @@ export default function ChatPage() {
 
         try {
             const token = await currentUser.getIdToken()
-            const response = await fetch(`/api/conversations/${id}`, {
+            const response = await fetch(`${API_BASE_URL}/api/conversations/${id}`, {
                 method: 'DELETE',
                 headers: { 'Authorization': `Bearer ${token}` }
             })
@@ -124,7 +126,7 @@ export default function ChatPage() {
 
         try {
             const token = await currentUser.getIdToken()
-            const response = await fetch('/api/chat/message', {
+            const response = await fetch(`${API_BASE_URL}/api/chat/message`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
