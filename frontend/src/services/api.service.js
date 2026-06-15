@@ -208,6 +208,10 @@ export const propertiesApi = {
     const response = await fetchWithAuth('/api/properties/stats')
     return response
   },
+  getAllLocations: async () => {
+    const response = await fetchWithAuth('/api/properties/all-locations')
+    return response
+  },
 
   adminGetAll: async () => {
     const response = await fetchAsAdmin('/api/properties/admin/all')

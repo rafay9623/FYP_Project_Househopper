@@ -154,15 +154,16 @@ export async function getAdminAllConversations(req, res) {
         // For now, we fetch message counts in parallel.
         const conversations = await Promise.all(convSnapshot.docs.map(async (doc) => {
             const data = doc.data()
-            const messagesSnapshot = await db.collection(CONVERSATIONS_COLLECTION)
+            const countSnapshot = await db.collection(CONVERSATIONS_COLLECTION)
                 .doc(doc.id)
                 .collection('messages')
+                .count()
                 .get()
 
             return {
                 id: doc.id,
                 participants: [userMap[data.userId] || 'Deleted User', 'HouseHopper AI'],
-                messageCount: messagesSnapshot.size,
+                messageCount: countSnapshot.data().count,
                 lastActive: data.updatedAt,
                 title: data.title || 'Conversation',
                 lastMessage: data.lastMessage || '',

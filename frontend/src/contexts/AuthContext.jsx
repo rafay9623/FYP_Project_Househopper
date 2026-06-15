@@ -74,18 +74,22 @@ export function AuthProvider({ children }) {
       throw new Error('Firebase Authentication is not initialized')
     }
 
+    const trimmedEmail = email.trim()
+    const trimmedPassword = password.trim()
+
     // Admin bypass — account does not exist in Firebase Auth
-    if (email === ADMIN_EMAIL && password === ADMIN_PASSWORD) {
+    if (trimmedEmail === ADMIN_EMAIL?.trim() && trimmedPassword === ADMIN_PASSWORD?.trim()) {
+      console.log('✅ Admin bypass login activated')
       const adminUser = {
         uid: 'admin-uid',
-        email: ADMIN_EMAIL,
+        email: ADMIN_EMAIL.trim(),
         emailVerified: true,
         displayName: 'System Admin',
         getIdToken: async () => 'admin-token',
       }
       const adminProfile = {
         _id: 'admin-profile',
-        email: ADMIN_EMAIL,
+        email: ADMIN_EMAIL.trim(),
         role: 'admin',
         firstName: 'System',
         lastName: 'Admin',

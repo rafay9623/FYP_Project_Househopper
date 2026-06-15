@@ -1,10 +1,14 @@
 import Stripe from 'stripe'
 import { getFirestore } from '../config/firebase_config.js'
+import NodeCache from 'node-cache'
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || 'sk_test_REPLACE_ME')
 
 const USERS_COLLECTION = 'users'
 const CHAT_USAGE_COLLECTION = 'chat_usage'
+
+// Cache user plan data for up to 30 seconds to speed up React page/context loads
+const subscriptionCache = new NodeCache({ stdTTL: 30 })
 
 // Plan definitions
 export const PLANS = {
@@ -41,6 +45,17 @@ export async function getUserPlan(req, res) {
       return res.status(401).json({ success: false, error: 'Authentication required' })
     }
 
+    const CACHE_KEY = `plan_${userId}`
+    const cachedPlan = subscriptionCache.get(CACHE_KEY)
+    if (cachedPlan) {
+      console.log(`🚀 Serving subscription plan from cache for user ${userId}`)
+      return res.json({
+        success: true,
+        ...cachedPlan,
+        cached: true
+      })
+    }
+
     // Fetch user document and chat usage in parallel
     const [userDoc, usageDoc] = await Promise.all([
       db.collection(USERS_COLLECTION).doc(userId).get(),
@@ -48,11 +63,15 @@ export async function getUserPlan(req, res) {
     ])
 
     if (!userDoc.exists) {
-      return res.json({
-        success: true,
+      const basicResponse = {
         plan: 'basic',
         planDetails: PLANS.basic,
         subscriptionStatus: null,
+      }
+      subscriptionCache.set(CACHE_KEY, basicResponse)
+      return res.json({
+        success: true,
+        ...basicResponse
       })
     }
 
@@ -82,13 +101,19 @@ export async function getUserPlan(req, res) {
       }
     }
 
-    res.json({
-      success: true,
+    const responseData = {
       plan,
       planDetails: PLANS[plan] || PLANS.basic,
       subscriptionStatus: userData.subscriptionStatus || null,
       subscriptionExpiresAt: userData.subscriptionExpiresAt || null,
       chatUsage,
+    }
+
+    subscriptionCache.set(CACHE_KEY, responseData)
+
+    res.json({
+      success: true,
+      ...responseData
     })
   } catch (error) {
     console.error('Error getting user plan:', error)
@@ -218,6 +243,9 @@ export async function verifySession(req, res) {
       updatedAt: new Date().toISOString(),
     })
 
+    // Invalidate local plan cache
+    subscriptionCache.del(`plan_${userId}`)
+
     console.log(`✅ Payment verified & plan activated: ${userId} → ${planId}`)
 
     res.json({
@@ -302,6 +330,7 @@ export async function handleWebhook(req, res) {
             stripePaymentIntentId: session.payment_intent || session.id,
             updatedAt: new Date().toISOString(),
           })
+          subscriptionCache.del(`plan_${firebaseUid}`)
           console.log(`✅ Payment completed: ${firebaseUid} → ${planId}`)
         }
         break
@@ -324,6 +353,7 @@ export async function handleWebhook(req, res) {
             subscriptionExpiresAt: new Date(subscription.current_period_end * 1000).toISOString(),
             updatedAt: new Date().toISOString(),
           })
+          subscriptionCache.del(`plan_${userDoc.id}`)
           console.log(`📋 Subscription updated for customer ${customerId}: ${subscription.status}`)
         }
         break
@@ -346,6 +376,7 @@ export async function handleWebhook(req, res) {
             stripeSubscriptionId: null,
             updatedAt: new Date().toISOString(),
           })
+          subscriptionCache.del(`plan_${userDoc.id}`)
           console.log(`🔻 Subscription canceled — customer ${customerId} downgraded to basic`)
         }
         break

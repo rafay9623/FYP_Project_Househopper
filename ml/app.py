@@ -8,6 +8,7 @@ Run with:  uvicorn app:app --port 5001 --reload
 """
 
 import os
+import sys
 import torch
 import pandas as pd
 import numpy as np
@@ -15,6 +16,15 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import Optional
+
+# Configure stdout/stderr to use UTF-8 encoding on Windows to prevent UnicodeEncodeError with emojis
+if sys.platform.startswith('win'):
+    try:
+        sys.stdout.reconfigure(encoding='utf-8')
+        sys.stderr.reconfigure(encoding='utf-8')
+    except AttributeError:
+        pass
+
 
 app = FastAPI(
     title="HouseHopper Recommendation Service",

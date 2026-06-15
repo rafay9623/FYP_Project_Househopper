@@ -1,4 +1,8 @@
 import { getFirestore } from '../config/firebase_config.js'
+import NodeCache from 'node-cache'
+
+// Global 60-second TTL cache for users directory list
+const usersCache = new NodeCache({ stdTTL: 60 })
 
 /**
  * Users Controller - Handles HTTP requests for user browsing
@@ -21,12 +25,23 @@ export async function getAllUsers(req, res) {
       })
     }
 
+    const CACHE_KEY = 'all_users_list'
+    const cachedUsers = usersCache.get(CACHE_KEY)
+    if (cachedUsers) {
+      console.log('🚀 Serving all users list from cache')
+      return res.json({
+        success: true,
+        users: cachedUsers,
+        cached: true
+      })
+    }
+
     console.log(`🔍 Fetching all users (excluding: ${currentUserId} - ${currentUserEmail})`)
 
-    // Get all users and all properties in parallel
+    // Get all users and all properties in parallel, selecting only required fields for properties to reduce payload
     const [usersSnapshot, propertiesSnapshot] = await Promise.all([
       db.collection('users').get(),
-      db.collection('properties').get()
+      db.collection('properties').select('userId', 'image_url', 'property_image', 'name', 'title').get()
     ])
     
     // Count properties per user
@@ -97,6 +112,8 @@ export async function getAllUsers(req, res) {
     })
 
     console.log(`✅ Found ${users.length} active property groups to display`)
+
+    usersCache.set(CACHE_KEY, users)
 
     res.json({
       success: true,
@@ -192,10 +209,11 @@ export async function getUserById(req, res) {
 
     const userData = userDoc.data()
 
-    // Get user's property count
-    const propertiesSnapshot = await db
+    // Get user's property count via lightweight aggregation query
+    const countSnapshot = await db
       .collection('properties')
       .where('userId', '==', userId)
+      .count()
       .get()
 
     const user = {
@@ -205,10 +223,10 @@ export async function getUserById(req, res) {
       first_name: userData.firstName || '',
       last_name: userData.lastName || '',
       displayName: userData.displayName || '',
-      property_count: propertiesSnapshot.size
+      property_count: countSnapshot.data().count
     }
 
-    console.log(`✅ User ${userId} fetched successfully (${propertiesSnapshot.size} properties)`)
+    console.log(`✅ User ${userId} fetched successfully (${countSnapshot.data().count} properties)`)
 
     res.json({
       success: true,

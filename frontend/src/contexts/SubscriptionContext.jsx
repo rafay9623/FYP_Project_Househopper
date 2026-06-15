@@ -18,12 +18,22 @@ const FEATURE_PLAN_MAP = {
 const PLAN_LEVELS = { basic: 0, intermediate: 1, premium: 2 }
 
 export function SubscriptionProvider({ children }) {
-  const { user, isAuthenticated } = useAuth()
+  const { user, isAuthenticated, userProfile } = useAuth()
   const [plan, setPlan] = useState('basic')
   const [planDetails, setPlanDetails] = useState(null)
   const [chatUsage, setChatUsage] = useState(null)
   const [subscriptionStatus, setSubscriptionStatus] = useState(null)
   const [loading, setLoading] = useState(true)
+
+  // Sync plan state when userProfile changes to avoid flickering on login
+  useEffect(() => {
+    if (userProfile) {
+      const p = userProfile.subscriptionPlan || 'basic'
+      setPlan(p)
+      setPlanDetails({ id: p, name: p.charAt(0).toUpperCase() + p.slice(1) })
+      setSubscriptionStatus(userProfile.subscriptionStatus || null)
+    }
+  }, [userProfile])
 
   const fetchPlan = useCallback(async () => {
     if (!isAuthenticated || !user) {
@@ -42,6 +52,14 @@ export function SubscriptionProvider({ children }) {
       return
     }
 
+    // Pre-populate with userProfile if available to prevent Basic flicker
+    if (userProfile) {
+      const p = userProfile.subscriptionPlan || 'basic'
+      setPlan(p)
+      setPlanDetails({ id: p, name: p.charAt(0).toUpperCase() + p.slice(1) })
+      setSubscriptionStatus(userProfile.subscriptionStatus || null)
+    }
+
     try {
       const data = await subscriptionApi.getPlan()
       if (data.success) {
@@ -52,11 +70,13 @@ export function SubscriptionProvider({ children }) {
       }
     } catch (error) {
       console.error('Failed to fetch subscription plan:', error)
-      setPlan('basic')
+      if (!userProfile) {
+        setPlan('basic')
+      }
     } finally {
       setLoading(false)
     }
-  }, [isAuthenticated, user])
+  }, [isAuthenticated, user, userProfile])
 
   useEffect(() => {
     fetchPlan()

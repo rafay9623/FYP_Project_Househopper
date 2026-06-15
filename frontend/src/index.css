@@ -479,6 +479,14 @@
   z-index: 1;
 }
 
+/* Google Maps: reset the global * { border-color } so map tiles render correctly */
+#google-map-container *,
+#google-map-container *::before,
+#google-map-container *::after {
+  border-color: initial;
+  border-style: none;
+}
+
 /* Toast notifications */
 [data-radix-toast-viewport] {
   z-index: 9999 !important;
