@@ -42,7 +42,8 @@ export default function Chatbot() {
             if (currentUser && conversationId) {
                 try {
                     const token = await currentUser.getIdToken()
-                    const response = await fetch(`/api/conversations/${conversationId}/messages`, {
+                    const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001'
+                    const response = await fetch(`${API_BASE_URL}/api/conversations/${conversationId}/messages`, {
                         headers: { 'Authorization': `Bearer ${token}` }
                     })
                     const data = await response.json()
@@ -74,8 +75,9 @@ export default function Chatbot() {
             }
 
             const token = await currentUser.getIdToken()
+            const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001'
 
-            const response = await fetch('/api/chat/message', {
+            const response = await fetch(`${API_BASE_URL}/api/chat/message`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
