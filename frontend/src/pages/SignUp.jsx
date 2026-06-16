@@ -115,13 +115,11 @@ export default function SignUpPage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault()
-    alert('Submit button clicked!')
     console.log('Submit button clicked! formData:', formData)
     setError(null)
 
     const showError = (msg) => {
       setError(msg)
-      alert('Validation Error: ' + msg)
       toast({
         title: 'Validation Error',
         description: msg,
@@ -197,7 +195,6 @@ export default function SignUpPage() {
       }, 1500)
     } catch (err) {
       console.error('Sign up error:', err)
-      alert('Sign up error: ' + err.message + (err.code ? ' (code: ' + err.code + ')' : ''))
       let errorMessage = 'Failed to create account. Please try again.'
 
       if (err.code === 'auth/email-already-in-use') {
