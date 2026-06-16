@@ -163,6 +163,7 @@ export default function Chatbot() {
                 <Button
                     onClick={() => setIsOpen(!isOpen)}
                     size="icon"
+                    aria-label="Toggle chat window"
                     className={cn(
                         "h-14 w-14 rounded-full shadow-lg transition-all duration-300 hover:scale-110 magnetic ripple",
                         isOpen ? "bg-destructive hover:bg-destructive/90 rotate-90" : "bg-gradient-to-r from-secondary to-primary hover:shadow-secondary/50"

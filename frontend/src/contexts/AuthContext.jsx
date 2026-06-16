@@ -197,7 +197,7 @@ export function AuthProvider({ children }) {
             console.error('❌ CRITICAL: Failed to create Firestore profile after 3 attempts')
             // Don't throw here - let the user continue, but log the error
             // The document will be created on first login via the login endpoint
-            throw new Error('Failed to create user profile. Please try logging in after verifying your email.')
+            throw new Error(`Failed to create user profile: ${backendError.message}`)
           }
 
           // Wait a bit before retrying

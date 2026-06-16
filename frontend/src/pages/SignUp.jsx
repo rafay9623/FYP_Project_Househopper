@@ -362,8 +362,9 @@ export default function SignUpPage() {
                       />
                       <button
                         type="button"
+                        aria-label="Toggle password visibility"
                         onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-4 top-1/2 -translate-y-1/2 text-foreground/40 hover:text-foreground transition-colors"
+                        className="absolute right-4 top-1/2 -translate-y-1/2 text-foreground/40 hover:text-foreground transition-colors"
                       >
                       {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
                       </button>
@@ -403,8 +404,9 @@ export default function SignUpPage() {
                       />
                       <button
                         type="button"
+                        aria-label="Toggle confirm password visibility"
                         onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                      className="absolute right-4 top-1/2 -translate-y-1/2 text-foreground/40 hover:text-foreground transition-colors"
+                        className="absolute right-4 top-1/2 -translate-y-1/2 text-foreground/40 hover:text-foreground transition-colors"
                       >
                       {showConfirmPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
                       </button>
@@ -425,9 +427,8 @@ export default function SignUpPage() {
 
                 {/* Submit Button */}
                   <Button 
-                    type="button" 
-                    onClick={handleSubmit}
-                  className="w-full btn-gradient rounded-xl h-12 text-lg font-semibold text-background magnetic ripple" 
+                    type="submit" 
+                  className="w-full btn-gradient rounded-xl h-12 text-lg font-semibold text-background ripple" 
                     disabled={loading || !isPasswordValid || !doPasswordsMatch}
                   >
                     {loading ? (

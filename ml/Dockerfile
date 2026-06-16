@@ -1,11 +1,14 @@
 FROM python:3.9
 
-WORKDIR /code
+RUN useradd -m -u 1000 user
+USER user
+ENV PATH="/home/user/.local/bin:$PATH"
 
-COPY ./requirements.txt /code/requirements.txt
-RUN pip install --no-cache-dir --upgrade -r /code/requirements.txt
+WORKDIR /app
 
-COPY . .
+COPY --chown=user ./requirements.txt requirements.txt
+RUN pip install --no-cache-dir --upgrade -r requirements.txt
 
-# Hugging Face Spaces requires the app to run on port 7860
+COPY --chown=user . /app
+
 CMD ["uvicorn", "app:app", "--host", "0.0.0.0", "--port", "7860"]

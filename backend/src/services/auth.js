@@ -15,20 +15,27 @@ export async function ensureFirestoreProfile(uid, overrides = {}) {
   const db = getFirestore()
   const auth = getAuth()
   
-  const userRecord = await auth.getUser(uid)
+  let userRecord = null
+  try {
+    userRecord = await auth.getUser(uid)
+  } catch (err) {
+    console.warn(`⚠️ Failed to fetch user record from Firebase Auth for UID ${uid}:`, err.message)
+  }
+
+  const email = userRecord?.email || overrides.email || ''
+  const displayName = userRecord?.displayName || overrides.displayName || `${overrides.firstName || ''} ${overrides.lastName || ''}`.trim()
+  const authFirstName = userRecord?.displayName?.split(' ')[0] || overrides.firstName || ''
+  const authLastName = userRecord?.displayName?.split(' ').slice(1).join(' ') || overrides.lastName || ''
   const ref = db.collection(USERS_COLLECTION).doc(uid)
   const existing = await ref.get()
 
-  const authFirstName = userRecord.displayName?.split(' ')[0] || ''
-  const authLastName = userRecord.displayName?.split(' ').slice(1).join(' ') || ''
-
   const profile = createUserObject({
-    uid: userRecord.uid,
-    email: userRecord.email,
-    displayName: userRecord.displayName || `${overrides.firstName || authFirstName} ${overrides.lastName || authLastName}`.trim(),
+    uid: uid,
+    email: email,
+    displayName: displayName,
     firstName: overrides.firstName || authFirstName,
     lastName: overrides.lastName || authLastName,
-    isActive: userRecord.emailVerified,
+    isActive: userRecord ? userRecord.emailVerified : false,
     ...overrides,
   })
 
@@ -343,7 +350,12 @@ export async function updateUserProfileAfterVerification(uid) {
     }
 
     const userData = userDoc.data()
-    const userRecord = await auth.getUser(uid)
+    let userRecord = null
+    try {
+      userRecord = await auth.getUser(uid)
+    } catch (err) {
+      console.warn(`⚠️ Failed to fetch user record during email verification for UID ${uid}:`, err.message)
+    }
 
     // Complete the user profile with pending data
     const completeUserDoc = {

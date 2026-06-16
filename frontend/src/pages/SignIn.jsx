@@ -220,8 +220,9 @@ export default function SignInPage() {
                       />
                       <button
                         type="button"
-                        onClick={() => setShowPassword(!showPassword)}
+                        aria-label="Toggle password visibility"
                         className="absolute right-4 top-1/2 -translate-y-1/2 text-foreground/40 hover:text-foreground transition-colors"
+                        onClick={() => setShowPassword(!showPassword)}
                       >
                         {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
                       </button>
@@ -237,7 +238,7 @@ export default function SignInPage() {
                   {/* Submit Button */}
                   <Button
                     type="submit"
-                    className="w-full bg-gradient-to-r from-secondary to-secondary/80 hover:from-secondary/90 hover:to-secondary/70 rounded-xl h-12 text-lg font-semibold text-secondary-foreground magnetic ripple"
+                    className="w-full bg-gradient-to-r from-secondary to-secondary/80 hover:from-secondary/90 hover:to-secondary/70 rounded-xl h-12 text-lg font-semibold text-secondary-foreground ripple"
                     disabled={loading}
                   >
                     {loading ? (

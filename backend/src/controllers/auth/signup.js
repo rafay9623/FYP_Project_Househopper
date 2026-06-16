@@ -51,7 +51,7 @@ export async function signup(req, res) {
         console.error('❌ Error creating Firestore profile:', tokenError)
         return res.status(401).json({
           success: false,
-          error: 'Failed to authenticate token during signup.'
+          error: `Failed to authenticate token during signup: ${tokenError.message}`
         })
       }
     }

@@ -313,7 +313,7 @@
 }
 
 .btn-gradient:hover {
-  transform: translateY(-3px) scale(1.02);
+  transform: scale(1.02);
   box-shadow: 
     0 12px 40px rgba(5, 150, 105, 0.35),
     0 0 0 2px rgba(5, 150, 105, 0.2),

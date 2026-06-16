@@ -17,9 +17,23 @@ export async function verifyEmail(req, res) {
       const decodedToken = await auth.verifyIdToken(idToken)
       const uid = decodedToken.uid
 
-      const userRecord = await auth.getUser(uid)
+      let emailVerified = false
+      let userEmail = decodedToken.email || ''
+      let displayName = ''
+      let phoneNumber = ''
 
-      if (!userRecord.emailVerified) {
+      try {
+        const userRecord = await auth.getUser(uid)
+        emailVerified = userRecord.emailVerified
+        userEmail = userRecord.email || userEmail
+        displayName = userRecord.displayName || ''
+        phoneNumber = userRecord.phoneNumber || ''
+      } catch (getUserError) {
+        console.warn('⚠️ Failed to fetch userRecord during verifyEmail, falling back to ID token:', getUserError.message)
+        emailVerified = decodedToken.email_verified || false
+      }
+
+      if (!emailVerified) {
         return res.status(400).json({ success: false, error: 'Email is not verified yet. Please verify your email first.' })
       }
 
@@ -30,17 +44,17 @@ export async function verifyEmail(req, res) {
       if (!userDoc.exists) {
         console.log(`⚠️ User document not found for ${uid}, creating profile...`)
         const newUserDoc = {
-          uid: userRecord.uid,
-          email: userRecord.email,
+          uid: uid,
+          email: userEmail,
           emailVerified: true,
-          firstName: userRecord.displayName?.split(' ')[0] || '',
-          lastName: userRecord.displayName?.split(' ').slice(1).join(' ') || '',
-          displayName: userRecord.displayName || '',
+          firstName: displayName.split(' ')[0] || '',
+          lastName: displayName.split(' ').slice(1).join(' ') || '',
+          displayName: displayName,
           role: 'user',
           isActive: true,
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
-          ...(userRecord.phoneNumber && { phoneNumber: userRecord.phoneNumber })
+          ...(phoneNumber && { phoneNumber: phoneNumber })
         }
         await userDocRef.set(newUserDoc)
         user = newUserDoc
