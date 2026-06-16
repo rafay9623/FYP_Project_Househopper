@@ -184,7 +184,7 @@ export default function SignInPage() {
 
             {/* Form Card */}
             <AnimatedSection animation="scale-in" delay={100}>
-              <div className="glass-card rounded-3xl p-8 tilt-3d">
+              <div className="glass-card rounded-3xl p-8">
                 <div className="flex items-center gap-2 mb-6">
                   <Sparkles className="w-5 h-5 text-secondary spin-slow" />
                   <h2 className="text-xl font-semibold text-foreground">Sign In</h2>

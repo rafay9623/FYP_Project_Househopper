@@ -68,7 +68,7 @@ export async function verifyEmail(req, res) {
         user = updatedDoc.data()
       }
 
-      console.log(`✅ Email verified and profile activated for user: ${userRecord.email}`)
+      console.log(`✅ Email verified and profile activated for user: ${userEmail}`)
 
       res.status(200).json({
         success: true,

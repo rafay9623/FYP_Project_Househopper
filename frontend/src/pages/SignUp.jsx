@@ -115,11 +115,13 @@ export default function SignUpPage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault()
+    alert('Submit button clicked!')
     console.log('Submit button clicked! formData:', formData)
     setError(null)
 
     const showError = (msg) => {
       setError(msg)
+      alert('Validation Error: ' + msg)
       toast({
         title: 'Validation Error',
         description: msg,
@@ -195,6 +197,7 @@ export default function SignUpPage() {
       }, 1500)
     } catch (err) {
       console.error('Sign up error:', err)
+      alert('Sign up error: ' + err.message + (err.code ? ' (code: ' + err.code + ')' : ''))
       let errorMessage = 'Failed to create account. Please try again.'
 
       if (err.code === 'auth/email-already-in-use') {
@@ -286,7 +289,7 @@ export default function SignUpPage() {
 
             {/* Form Card */}
             <AnimatedSection animation="scale-in" delay={100}>
-              <div className="glass-card rounded-3xl p-8 tilt-3d">
+              <div className="glass-card rounded-3xl p-8">
                 <div className="flex items-center gap-2 mb-6">
                   <Sparkles className="w-5 h-5 text-primary spin-slow" />
                   <h2 className="text-xl font-semibold text-foreground">Create Account</h2>
@@ -426,20 +429,20 @@ export default function SignUpPage() {
                   </div>
 
                 {/* Submit Button */}
-                  <Button 
+                  <button 
                     type="submit" 
-                  className="w-full btn-gradient rounded-xl h-12 text-lg font-semibold text-background ripple" 
-                    disabled={loading || !isPasswordValid || !doPasswordsMatch}
+                    className="w-full btn-gradient rounded-xl h-12 text-lg font-semibold text-background ripple flex items-center justify-center gap-2" 
+                    disabled={loading}
                   >
                     {loading ? (
                       <>
-                      <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                        <Loader2 className="mr-2 h-5 w-5 animate-spin" />
                         Creating Account...
                       </>
                     ) : (
                       'Create Account'
                     )}
-                  </Button>
+                  </button>
                 </form>
               </div>
             </AnimatedSection>
